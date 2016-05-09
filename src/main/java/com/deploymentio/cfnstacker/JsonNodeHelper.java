@@ -41,32 +41,7 @@ public class JsonNodeHelper {
 	 * @return merged JSON CloudFormation template
 	 */
 	public String getCombinedJsonStringForSubStack(String subStackName) throws Exception {
-		
-		boolean hasErrors = false ;
-		JsonNode combinedTemplateNode = null ;
-		
-		for (String name: config.getSubStacks().get(subStackName).getTemplates()) {
-			
-			JsonNodeParseResult jsonNodeParseResult = config.getConfigCreator().loadStackTemplate(name);
-			if (jsonNodeParseResult.hasError()) {
-				logger.error("Error parsing sub-stack template fragement: SubStack=" + subStackName + " " + jsonNodeParseResult.getError()) ;
-				hasErrors = true ;
-				continue ;
-			}
-			
-			JsonNode node = jsonNodeParseResult.getNode();
-			if (combinedTemplateNode == null) {
-				combinedTemplateNode = node ;
-			} else {
-				List<String> errors = mergeJsonNodes(combinedTemplateNode, node) ;
-				for (String err : errors) {
-					logger.error("Duplicate keys while merging template fragments: Template=" + name + " Key=" + err) ;
-					hasErrors = true ;
-				}
-			}
-		}
-		
-		return hasErrors ? null : combinedTemplateNode.toString();
+		return config.getSubStacks().get(subStackName).getTemplate().toString() ;
 	}
 
 	/**
@@ -80,44 +55,19 @@ public class JsonNodeHelper {
 	 */
 	public String getCombinedJsonString(Map<String, String> subStackTemplateUrls) throws Exception {
 		
-		boolean hasErrors = false ;
-		JsonNode combinedTemplateNode = null ;
-		
-		for (String name : config.getTemplates()) {
-			
-			JsonNodeParseResult jsonNodeParseResult = config.getConfigCreator().loadStackTemplate(name);
-			if (jsonNodeParseResult.hasError()) {
-				logger.error("Error parsing template fragement: " + jsonNodeParseResult.getError()) ;
-				hasErrors = true ;
-				continue ;
-			}
-			
-			JsonNode node = jsonNodeParseResult.getNode();
-			if (combinedTemplateNode == null) {
-				combinedTemplateNode = node ;
-			} else {
-				List<String> errors = mergeJsonNodes(combinedTemplateNode, node) ;
-				for (String err : errors) {
-					logger.error("Duplicate keys while merging template fragments: Template=" + name + " Key=" + err) ;
-					hasErrors = true ;
-				}
-			}
-		}
-		
-		if (!hasErrors) {
-			generateSecretHashKey(config.getName(), combinedTemplateNode);
+		JsonNode combinedTemplateNode = config.getTemplate();
+		generateSecretHashKey(config.getName(), combinedTemplateNode);
 
-			ObjectNode parameters = (ObjectNode) combinedTemplateNode.get("Parameters");
-			for (String key: subStackTemplateUrls.keySet()) {
-				String value = subStackTemplateUrls.get(key);
-				parameters.putObject(key + "TemplateURL")
-					.put("Description", "S3 Template URL for " + key + " sub-stack")
-					.put("Type", "String")
-					.put("Default", value);
-			}
+		ObjectNode parameters = (ObjectNode) combinedTemplateNode.get("Parameters");
+		for (String key: subStackTemplateUrls.keySet()) {
+			String value = subStackTemplateUrls.get(key);
+			parameters.putObject(key + "TemplateURL")
+				.put("Description", "S3 Template URL for " + key + " sub-stack")
+				.put("Type", "String")
+				.put("Default", value);
 		}
 		
-		return hasErrors ? null : combinedTemplateNode.toString();
+		return combinedTemplateNode.toString();
 	}
 
 	/**

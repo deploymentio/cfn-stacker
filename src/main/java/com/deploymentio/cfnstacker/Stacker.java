@@ -16,7 +16,7 @@ public class Stacker {
 		boolean success = false;
 		Stacker stacker = new Stacker();
 		try {
-			success = stacker.run(args[0], Action.CREATE_DRY_RUN);
+			success = stacker.run(args[0], Action.valueOf(args[1]));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -29,6 +29,8 @@ public class Stacker {
 		StackConfigCreator configCreator = new JsonFileStackConfigCreator(stackConfigFile);
 		StackConfig stackConfig = configCreator.getStackConfig();
 		CloudFormationClient client = new CloudFormationClient().withConfig(stackConfig);
+		JsonNodeHelper jsonNodeHelper = new JsonNodeHelper().withConfig(stackConfig);
+		ProgressTracker tracker = new ProgressTracker();
 		
 		// see what state the stack is in
 		Status status = client.getStackExecutionStatus(stackConfig.getName());
@@ -38,25 +40,45 @@ public class Stacker {
 			switch(action) {
 				
 				case CREATE:
-					break;
+					return new CloudFormationClientExecutor(client, jsonNodeHelper, tracker) {
+						@Override protected String executeStack(String stackName, String templateBody, CloudFormationClient client) throws Exception {
+							return client.createStack(templateBody, false);
+						}
+					}.validateAndExecuteStack(stackConfig, "create", false);
 
 				case CREATE_DRY_RUN:
-					break;
+					return new CloudFormationClientExecutor(client, jsonNodeHelper, tracker) {
+						@Override protected String executeStack(String stackName, String templateBody, CloudFormationClient client) throws Exception {
+							return client.createStack(templateBody, false);
+						}
+					}.validateAndExecuteStack(stackConfig, "create", true);
 
 				case DELETE:
-					break;
+					return new CloudFormationClientExecutor(client, jsonNodeHelper, tracker) {
+						@Override protected String executeStack(String stackName, String templateBody, CloudFormationClient client) throws Exception {
+							client.deleteStack(stackName);
+							return null;
+						}
+					}.validateAndExecuteStack(stackConfig, "delete", false);
 					
 				case UPDATE:
-					break;
+					return new CloudFormationClientExecutor(client, jsonNodeHelper, tracker) {
+						@Override protected String executeStack(String stackName, String templateBody, CloudFormationClient client) throws Exception {
+							return client.updateStack(templateBody);
+						}
+					}.validateAndExecuteStack(stackConfig, "update", false);
 
 				case UPDATE_DRY_RUN:
-					break;
+					return new CloudFormationClientExecutor(client, jsonNodeHelper, tracker) {
+						@Override protected String executeStack(String stackName, String templateBody, CloudFormationClient client) throws Exception {
+							return client.updateStack(templateBody);
+						}
+					}.validateAndExecuteStack(stackConfig, "update", true);
 			}
 		} else {
 			logger.error("This action is not allowed: Action=" + action.name() + " Status=" + status.name());
-			return false;
 		}
 		
-		return true;
+		return false;
 	}
 }

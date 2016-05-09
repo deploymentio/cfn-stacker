@@ -6,8 +6,9 @@ import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.databind.JsonNode;
 
-public class StackConfig extends BaseStackConfig {
+public class StackConfig {
 	
+	private String name;
 	private StackConfigCreator configCreator;
 	private String snsTopic;
 	private String s3Prefix;
@@ -17,6 +18,13 @@ public class StackConfig extends BaseStackConfig {
 	private Map<String, String> tags = new HashMap<>();
 	private JsonNode template;
 	
+	public String getName() {
+		return name;
+	}
+	@JsonSetter("Name")
+	public void setName(String name) {
+		this.name = name;
+	}
 	public JsonNode getTemplate() {
 		return template;
 	}

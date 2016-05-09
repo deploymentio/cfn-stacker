@@ -25,7 +25,20 @@ public class JsonFileStackConfigCreator implements StackConfigCreator {
 		JsonNode node = mapper.readTree(file);
 		config = mapper.convertValue(node.get("Stacker"), StackConfig.class);
 		config.setConfigCreator(this);
-		config.setTemplate(((ObjectNode)node).remove("Stacker"));
+		config.setTemplate(node);
+		((ObjectNode)node).remove("Stacker");
+		
+		for(String subStackName: config.getSubStacks().keySet()) {
+			SubStackConfig subStack = config.getSubStacks().get(subStackName);
+			subStack.setName(subStackName);
+			
+			JsonNodeParseResult result = loadStackTemplate(subStack.getPath());
+			if(!result.hasError()) {
+				subStack.setTemplate(result.getNode());
+			} else {
+				logger.error("Error parsing sub-stack: Name=" + subStackName + " " + result.getError());
+			}
+		}
 	}
 	
 	@Override
