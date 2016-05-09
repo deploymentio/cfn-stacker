@@ -8,10 +8,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
-import java.util.UUID;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +54,6 @@ public class JsonNodeHelper {
 	public String getCombinedJsonString(Map<String, String> subStackTemplateUrls) throws Exception {
 		
 		JsonNode combinedTemplateNode = config.getTemplate();
-		generateSecretHashKey(config.getName(), combinedTemplateNode);
 
 		ObjectNode parameters = (ObjectNode) combinedTemplateNode.get("Parameters");
 		for (String key: subStackTemplateUrls.keySet()) {
@@ -85,21 +82,6 @@ public class JsonNodeHelper {
 		
 		IOUtils.closeQuietly(writer) ;
 		logger.info("Wrote formatted JSON: File=" + file.getAbsolutePath());
-	}
-
-	/**
-	 * Generates new secret hash key that is inserted in the given JSON node as
-	 * cloud-formation output variable
-	 */
-	protected void generateSecretHashKey(String stackName, JsonNode combinedTemplateNode) {
-		ObjectNode outputs = (ObjectNode) combinedTemplateNode.get("Outputs") ;
-		if (outputs == null) {
-			outputs = ((ObjectNode)combinedTemplateNode).putObject("Outputs") ;
-		}
-		
-		ObjectNode secretHashKey = outputs.putObject("SecretHashKey") ; 
-		secretHashKey.put("Description", "Secret hash key used to update/delete this stack through stacker") ;
-		secretHashKey.put("Value", stackName + "-" + StringUtils.substringAfterLast(UUID.randomUUID().toString(), "-")) ;
 	}
 	
 	/**

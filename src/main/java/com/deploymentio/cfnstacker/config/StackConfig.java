@@ -67,12 +67,14 @@ public class StackConfig {
 	public Map<String, String> getParameters() {
 		return parameters;
 	}
+	@JsonSetter("Parameters")
 	public void setParameters(Map<String, String> paramaters) {
 		this.parameters = paramaters;
 	}
 	public Map<String, SubStackConfig> getSubStacks() {
 		return subStacks;
 	}
+	@JsonSetter("SubStacks")
 	public void setSubStacks(Map<String, SubStackConfig> subStacks) {
 		this.subStacks = subStacks;
 	}

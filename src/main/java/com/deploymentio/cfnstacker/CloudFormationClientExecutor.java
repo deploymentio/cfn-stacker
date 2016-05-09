@@ -39,7 +39,6 @@ public abstract class CloudFormationClientExecutor {
 		String stackName = options.getName() ;
 		String templateBody = null ;
 		boolean validated = false ;
-		boolean secretHashKeyMismatch = false ;
 		
 		try {
 			
@@ -86,15 +85,7 @@ public abstract class CloudFormationClientExecutor {
 			logger.error("Failure to validate stack template with name '" + stackName + "'", e) ;
 		}
 		
-		if (validated && !validateSecretHashKey()) {
-			logger.error("YOU CAN'T MODIFY AN EXISTING STACK UNLESS YOU KNOW THE SECRET!!!") ;
-			secretHashKeyMismatch = true ;
-		}
-		
-		if (validated && !secretHashKeyMismatch && !validateOnly) {
-			
-			// run the before-execute code 
-			beforeExecuteStack(client) ;
+		if (validated && !validateOnly) {
 			
 			// execute the code
 			logger.info("Attempting to " + action + " stack with name '" + stackName + "'") ;
@@ -103,30 +94,22 @@ public abstract class CloudFormationClientExecutor {
 			// track its progress
 			tracker.track(client, stackName, stackId, 30).waitUntilCompletion();
 			
-			// run the after-execute code
-			afterExecuteStack(client) ;
-			logger.info("Stack with name '" + stackName + "' has been " + action + "d. Stack's ID is " + stackId) ;
-
 			if (!"delete".equals(action)) {
                 client.printStackOutputs(client.findStack(stackName)) ;
             }
 		}
 
-		if(validated && !secretHashKeyMismatch && validateOnly) {
+		if(validated && validateOnly) {
 			jsonNodeHelper.writeFormattedJSONString(templateBody, new File(".template-new.json")) ;
 		}
 
-		return validated && !secretHashKeyMismatch ;
+		return validated;
 	}
 
 	protected boolean validateTemplateBody(String templateBody) throws Exception {
 		if (!StringUtils.isEmpty(templateBody))
 			return client.validateTemplate(templateBody) ;
 		return false ;
-	}
-	
-	protected boolean validateSecretHashKey() throws Exception {
-		return true ;
 	}
 	
 	/**
@@ -141,24 +124,4 @@ public abstract class CloudFormationClientExecutor {
 	 *         executed
 	 */
 	protected abstract String executeStack(String stackName, String templateBody, CloudFormationClient client) throws Exception ;
-	
-	/**
-	 * This method is called by
-	 * {@link CloudFormationClientExecutor#validateAndExecuteStack(String)}
-	 * after the stack operation is validated but before it is executed. By
-	 * default, it does nothing but it can be extended to do something useful.
-	 * 
-	 * @param client the AWS CloudFormation client
-	 */
-	protected void beforeExecuteStack(CloudFormationClient client) throws Exception { }
-
-	/**
-	 * This method is called by
-	 * {@link CloudFormationClientExecutor#validateAndExecuteStack(String)}
-	 * after the stack operation has been validated and executed. By default, it
-	 * does nothing but it can be extended to do something useful.
-	 * 
-	 * @param client the AWS CloudFormation client
-	 */
-	protected void afterExecuteStack(CloudFormationClient client) throws Exception { }
 }
