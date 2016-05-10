@@ -6,6 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.deploymentio.cfnstacker.JsonNodeParseResult;
+import com.deploymentio.cfnstacker.templatelang.Context;
+import com.deploymentio.cfnstacker.templatelang.Scanner;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -27,6 +29,10 @@ public class JsonFileStackConfigCreator implements StackConfigCreator {
 		config.setConfigCreator(this);
 		config.setTemplate(node);
 		((ObjectNode)node).remove("Stacker");
+
+		
+		Scanner scanner = new Scanner();
+		scanner.scanAndExecute(new Context(config.getParameters()), node);
 		
 		for(String subStackName: config.getSubStacks().keySet()) {
 			SubStackConfig subStack = config.getSubStacks().get(subStackName);
@@ -34,6 +40,7 @@ public class JsonFileStackConfigCreator implements StackConfigCreator {
 			
 			JsonNodeParseResult result = loadStackTemplate(subStack.getPath());
 			if(!result.hasError()) {
+				scanner.scanAndExecute(new Context(config.getParameters()), result.getNode());
 				subStack.setTemplate(result.getNode());
 			} else {
 				logger.error("Error parsing sub-stack: Name=" + subStackName + " " + result.getError());
