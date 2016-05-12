@@ -16,14 +16,14 @@ public class Scanner {
 		return this;
 	}
 	
-	public void scanAndExecute(Context context, JsonNode template) {
+	public JsonNode scanAndExecute(Context context, JsonNode template) {
 		
 		if (template.getNodeType() == JsonNodeType.ARRAY) {
 
 			for (int i = 0; i < template.size(); i++) {
 				
 				JsonNode node = template.get(i);
-				DirectiveExecutionResult result = registry.execute(context, node);
+				DirectiveExecutionResult result = registry.execute(this, context, node);
 				if (result.isReplaced()) {
 					((ArrayNode)template).set(i, result.getNode());
 				} else {
@@ -33,17 +33,24 @@ public class Scanner {
 			
 		} else if (template.getNodeType() == JsonNodeType.OBJECT) {
 		
-			for (Iterator<String> fieldIter = template.fieldNames(); fieldIter.hasNext(); ) {
-				String name = fieldIter.next();
-				JsonNode node = template.get(name);
-				
-				DirectiveExecutionResult result = registry.execute(context, node);
-				if (result.isReplaced()) {
-					((ObjectNode)template).set(name, result.getNode());
-				} else {
-					scanAndExecute(new Context(context), node);
+			DirectiveExecutionResult result = registry.execute(this, context, template);
+			if (!result.isReplaced()) {
+				for (Iterator<String> fieldIter = template.fieldNames(); fieldIter.hasNext(); ) {
+					String name = fieldIter.next();
+					JsonNode node = template.get(name);
+					
+					result = registry.execute(this, context, node);
+					if (result.isReplaced()) {
+						((ObjectNode)template).set(name, result.getNode());
+					} else {
+						scanAndExecute(new Context(context), node);
+					}
 				}
+			} else {
+				return result.getNode();
 			}
 		}
+		
+		return template;
 	}
 }

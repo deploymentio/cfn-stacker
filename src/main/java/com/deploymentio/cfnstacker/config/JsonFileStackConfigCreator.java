@@ -21,18 +21,18 @@ public class JsonFileStackConfigCreator implements StackConfigCreator {
 	private StackConfig config;
 	
 	public JsonFileStackConfigCreator(String path) throws Exception {
+		Scanner scanner = new Scanner();
 		File file = new File(path);
 		baseDir = file.getParentFile();
 		
 		JsonNode node = mapper.readTree(file);
 		config = mapper.convertValue(node.get("Stacker"), StackConfig.class);
 		config.setConfigCreator(this);
-		config.setTemplate(node);
-		((ObjectNode)node).remove("Stacker");
 
-		
-		Scanner scanner = new Scanner();
-		scanner.scanAndExecute(new Context(config.getParameters()), node);
+		// cleaning up the template, execute the cfntl directives, assign it to the config
+		((ObjectNode)node).remove("Stacker");
+		node = scanner.scanAndExecute(new Context(config.getParameters()), node);
+		config.setTemplate(node);
 		
 		for(String subStackName: config.getSubStacks().keySet()) {
 			SubStackConfig subStack = config.getSubStacks().get(subStackName);
@@ -40,8 +40,8 @@ public class JsonFileStackConfigCreator implements StackConfigCreator {
 			
 			JsonNodeParseResult result = loadStackTemplate(subStack.getPath());
 			if(!result.hasError()) {
-				scanner.scanAndExecute(new Context(config.getParameters()), result.getNode());
-				subStack.setTemplate(result.getNode());
+				JsonNode subStackTemplate = scanner.scanAndExecute(new Context(config.getParameters()), result.getNode());
+				subStack.setTemplate(subStackTemplate);
 			} else {
 				logger.error("Error parsing sub-stack: Name=" + subStackName + " " + result.getError());
 			}
