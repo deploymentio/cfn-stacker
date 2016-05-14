@@ -16,6 +16,7 @@ public class JsonFileStackConfigCreator implements StackConfigCreator {
 		File file = new File(path);
 		baseDir = file.getParentFile();
 		config = mapper.readValue(file, StackConfig.class);
+		config.setConfigCreator(this);
 	}
 	
 	@Override
