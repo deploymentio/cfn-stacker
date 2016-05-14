@@ -1,10 +1,11 @@
 package com.deploymentio.cfnstacker.config;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonSetter;
-import com.fasterxml.jackson.databind.JsonNode;
 
 public class StackConfig {
 	
@@ -16,7 +17,7 @@ public class StackConfig {
 	private Map<String, String> parameters = new HashMap<>();
 	private Map<String, SubStackConfig> subStacks = new HashMap<>();
 	private Map<String, String> tags = new HashMap<>();
-	private JsonNode template;
+	private List<String> fragments = new ArrayList<>();
 	
 	public String getName() {
 		return name;
@@ -24,12 +25,6 @@ public class StackConfig {
 	@JsonSetter("Name")
 	public void setName(String name) {
 		this.name = name;
-	}
-	public JsonNode getTemplate() {
-		return template;
-	}
-	public void setTemplate(JsonNode template) {
-		this.template = template;
 	}
 	public String getS3Prefix() {
 		return s3Prefix;
@@ -84,5 +79,12 @@ public class StackConfig {
 	@JsonSetter("Tags")
 	public void setTags(Map<String, String> tags) {
 		this.tags = tags;
+	}
+	public List<String> getFragments() {
+		return fragments;
+	}
+	@JsonSetter("Fragments")
+	public void setFragments(List<String> fragments) {
+		this.fragments = fragments;
 	}
 }

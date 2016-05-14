@@ -1,7 +1,7 @@
-package com.deploymentio.cfnstacker.templatelang.directives;
+package com.deploymentio.cfnstacker.template.directives;
 
-import com.deploymentio.cfnstacker.templatelang.BaseDirective;
-import com.deploymentio.cfnstacker.templatelang.Context;
+import com.deploymentio.cfnstacker.template.BaseDirective;
+import com.deploymentio.cfnstacker.template.Context;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 

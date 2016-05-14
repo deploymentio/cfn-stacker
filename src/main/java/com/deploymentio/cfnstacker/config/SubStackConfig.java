@@ -1,13 +1,18 @@
 package com.deploymentio.cfnstacker.config;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonSetter;
-import com.fasterxml.jackson.databind.JsonNode;
 
 public class SubStackConfig {
 	
 	private String name;
 	private String path;
-	private JsonNode template;
+	private Map<String, String> parameters = new HashMap<>();
+	private List<String> fragments = new ArrayList<>();
 	
 	public String getName() {
 		return name;
@@ -22,10 +27,18 @@ public class SubStackConfig {
 	public void setPath(String path) {
 		this.path = path;
 	}
-	public JsonNode getTemplate() {
-		return template;
+	public Map<String, String> getParameters() {
+		return parameters;
 	}
-	public void setTemplate(JsonNode template) {
-		this.template = template;
+	@JsonSetter("Parameters")
+	public void setParameters(Map<String, String> parameters) {
+		this.parameters = parameters;
+	}
+	public List<String> getFragments() {
+		return fragments;
+	}
+	@JsonSetter("Fragments")
+	public void setFragments(List<String> fragments) {
+		this.fragments = fragments;
 	}
 }

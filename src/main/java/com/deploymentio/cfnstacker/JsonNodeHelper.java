@@ -14,6 +14,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.deploymentio.cfnstacker.config.StackConfig;
+import com.deploymentio.cfnstacker.config.SubStackConfig;
+import com.deploymentio.cfnstacker.template.Context;
+import com.deploymentio.cfnstacker.template.Scanner;
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -39,7 +42,41 @@ public class JsonNodeHelper {
 	 * @return merged JSON CloudFormation template
 	 */
 	public String getCombinedJsonStringForSubStack(String subStackName) throws Exception {
-		return config.getSubStacks().get(subStackName).getTemplate().toString() ;
+
+		SubStackConfig subStackConfig = config.getSubStacks().get(subStackName);
+
+		boolean hasErrors = false;
+		JsonNode combinedTemplateNode = null;
+		
+		for (String file: subStackConfig.getFragments()) {
+			
+			JsonNodeParseResult nodeParseResult = config.getConfigCreator().loadStackTemplate(file);
+			if (nodeParseResult.hasError()) {
+				logger.error("Error loading sub-stack template fragment: SubStack=" + subStackName + " " + nodeParseResult.getError());
+				hasErrors = true;
+				continue;
+			}
+			
+			JsonNode node = nodeParseResult.getNode();
+			if (combinedTemplateNode == null) {
+				combinedTemplateNode = node ;
+			} else {
+				List<String> errors = mergeJsonNodes(combinedTemplateNode, node) ;
+				for (String err : errors) {
+					logger.error("Duplicate keys while merging template fragments: File=" + file + " Key=" + err) ;
+					hasErrors = true ;
+				}
+			}
+		}
+		
+		if (!hasErrors) {
+			Scanner scanner = new Scanner();
+			Context context = new Context(config.getParameters());
+			context.putAll(subStackConfig.getParameters());
+			combinedTemplateNode = scanner.scanAndExecute(context, combinedTemplateNode);
+		}
+		
+		return hasErrors ? null : combinedTemplateNode.toString();
 	}
 
 	/**
@@ -53,18 +90,47 @@ public class JsonNodeHelper {
 	 */
 	public String getCombinedJsonString(Map<String, String> subStackTemplateUrls) throws Exception {
 		
-		JsonNode combinedTemplateNode = config.getTemplate();
+		boolean hasErrors = false;
+		JsonNode combinedTemplateNode = null;
+		
+		for (String file: config.getFragments()) {
+			
+			JsonNodeParseResult nodeParseResult = config.getConfigCreator().loadStackTemplate(file);
+			if (nodeParseResult.hasError()) {
+				logger.error("Error loading stack template fragment: " + nodeParseResult.getError());
+				hasErrors = true;
+				continue;
+			}
+			
+			JsonNode node = nodeParseResult.getNode();
+			if (combinedTemplateNode == null) {
+				combinedTemplateNode = node ;
+			} else {
+				List<String> errors = mergeJsonNodes(combinedTemplateNode, node) ;
+				for (String err : errors) {
+					logger.error("Duplicate keys while merging template fragments: File=" + file + " Key=" + err) ;
+					hasErrors = true ;
+				}
+			}
+		}
 
-		ObjectNode parameters = (ObjectNode) combinedTemplateNode.get("Parameters");
-		for (String key: subStackTemplateUrls.keySet()) {
-			String value = subStackTemplateUrls.get(key);
-			parameters.putObject(key + "TemplateURL")
+		if (!hasErrors) {
+			Scanner scanner = new Scanner();
+			Context context = new Context(config.getParameters());
+			combinedTemplateNode = scanner.scanAndExecute(context, combinedTemplateNode);
+
+			ObjectNode parameters = (ObjectNode) combinedTemplateNode.get("Parameters");
+			for (String key: subStackTemplateUrls.keySet()) {
+				String value = subStackTemplateUrls.get(key);
+				parameters.putObject(key + "TemplateURL")
 				.put("Description", "S3 Template URL for " + key + " sub-stack")
 				.put("Type", "String")
 				.put("Default", value);
+			}
+			return combinedTemplateNode.toString();
+		} else {
+			return null;
 		}
-		
-		return combinedTemplateNode.toString();
 	}
 
 	/**

@@ -1,8 +1,8 @@
-package com.deploymentio.cfnstacker.templatelang;
+package com.deploymentio.cfnstacker.template;
 
 import java.util.Iterator;
 
-import com.deploymentio.cfnstacker.templatelang.directives.Registry;
+import com.deploymentio.cfnstacker.template.directives.Registry;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;

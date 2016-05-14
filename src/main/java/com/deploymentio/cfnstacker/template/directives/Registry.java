@@ -1,12 +1,12 @@
-package com.deploymentio.cfnstacker.templatelang.directives;
+package com.deploymentio.cfnstacker.template.directives;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import com.deploymentio.cfnstacker.templatelang.BaseDirective;
-import com.deploymentio.cfnstacker.templatelang.Context;
-import com.deploymentio.cfnstacker.templatelang.DirectiveExecutionResult;
-import com.deploymentio.cfnstacker.templatelang.Scanner;
+import com.deploymentio.cfnstacker.template.BaseDirective;
+import com.deploymentio.cfnstacker.template.Context;
+import com.deploymentio.cfnstacker.template.DirectiveExecutionResult;
+import com.deploymentio.cfnstacker.template.Scanner;
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class Registry {

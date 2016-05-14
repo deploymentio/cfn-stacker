@@ -1,4 +1,4 @@
-package com.deploymentio.cfnstacker.templatelang;
+package com.deploymentio.cfnstacker.template;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,9 +13,12 @@ public class Context {
 	}
 	
 	public Context(Map<String, String> map) {
-		this.map.putAll(map);
+		putAll(map);
 	}
 	
+	public void putAll(Map<String, String> map) {
+		this.map.putAll(map);
+	}
 	
 	public Object get(String key) {
 		if (map.containsKey(key)) {

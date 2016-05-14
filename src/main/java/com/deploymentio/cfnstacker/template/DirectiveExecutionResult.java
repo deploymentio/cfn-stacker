@@ -1,4 +1,4 @@
-package com.deploymentio.cfnstacker.templatelang;
+package com.deploymentio.cfnstacker.template;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
