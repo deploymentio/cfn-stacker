@@ -27,7 +27,6 @@ import com.amazonaws.services.cloudformation.model.GetTemplateRequest;
 import com.amazonaws.services.cloudformation.model.ListStackResourcesRequest;
 import com.amazonaws.services.cloudformation.model.ListStackResourcesResult;
 import com.amazonaws.services.cloudformation.model.Output;
-import com.amazonaws.services.cloudformation.model.Parameter;
 import com.amazonaws.services.cloudformation.model.Stack;
 import com.amazonaws.services.cloudformation.model.StackEvent;
 import com.amazonaws.services.cloudformation.model.StackResource;
@@ -41,27 +40,21 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.util.DateUtils;
 import com.deploymentio.cfnstacker.config.StackConfig;
+import com.deploymentio.cfnstacker.template.TemplateParameters;
 
 public class CloudFormationClient {
 	
 	private final static Logger logger = LoggerFactory.getLogger(CloudFormationClient.class);
 
-	private AmazonS3 s3Client = new AmazonS3Client();
-	public CloudFormationClient withS3Client(AmazonS3 s3Client) {
-		this.s3Client = s3Client;
-		return this ;
-	}
-
-	private AmazonCloudFormation client = new AmazonCloudFormationClient();
-	public CloudFormationClient withClient(AmazonCloudFormation client) {
-		this.client = client;
-		return this ;
-	}
+	protected AmazonS3 s3Client = new AmazonS3Client();
+	protected AmazonCloudFormation client = new AmazonCloudFormationClient();
 
 	private StackConfig config;
-	public CloudFormationClient withConfig(StackConfig config) {
+	private TemplateParameters templateParameters;
+
+	public CloudFormationClient(StackConfig config) {
 		this.config = config;
-		return this;
+		this.templateParameters = new TemplateParameters(config);
 	}
 	
 	/**
@@ -148,7 +141,7 @@ public class CloudFormationClient {
 	 * @param startDate only events after this time are considered
 	 * @return a list of stack events
 	 */
-	public List<StackEvent> getStackEvents(String stackId, Date startDate, ProgressTracker tracker, int checkIntervalSeconds) {
+	public List<StackEvent> getStackEvents(String stackId, Date startDate, OperationTracker tracker, int checkIntervalSeconds) {
 
 		ArrayList<StackEvent> events = new ArrayList<StackEvent>() ;
 		DescribeStackEventsResult result = null ;
@@ -224,14 +217,6 @@ public class CloudFormationClient {
 	}
 	
 	/**
-	 * Determines if a stack is busy, exists and can be updated, or does not exist.
-	 */
-	public Status getStackExecutionStatus(String name) {
-		Stack stack = findStack(name) ;
-		return Status.valueOf(stack) ;
-	}
-
-	/**
 	 * Validates the stack template with CloudFormation and ensure that values
 	 * were provided for all required parameters
 	 * 
@@ -302,15 +287,15 @@ public class CloudFormationClient {
 	 * @return ID of the new stack
 	 */
 	public String createStack(String templateBody, boolean disableRollback) throws Exception {
-		
-		return client.createStack(new CreateStackRequest()
-			.withStackName(config.getName())
-			.withTemplateURL(uploadCfnTemplateToS3(config.getName(), "create", templateBody))
-			.withNotificationARNs(config.getSnsTopic())
-			.withCapabilities("CAPABILITY_IAM")
-			.withTags(getTemplateTags())
-			.withDisableRollback(disableRollback)
-			.withParameters(getTemplateParameters())).getStackId() ;
+		List<Tag> tags = new ArrayList<>();
+		for (String key : config.getTags().keySet()) {
+			tags.add(new Tag().withKey(key).withValue(config.getTags().get(key)));
+		}
+		return client.createStack(new CreateStackRequest().withStackName(config.getName())
+				.withTemplateURL(uploadCfnTemplateToS3(config.getName(), "create", templateBody))
+				.withNotificationARNs(config.getSnsTopic()).withCapabilities("CAPABILITY_IAM")
+				.withTags(tags).withDisableRollback(disableRollback)
+				.withParameters(templateParameters.getApplicableParameters(templateBody))).getStackId();
 	}
 
 	/**
@@ -320,11 +305,10 @@ public class CloudFormationClient {
 	 * @return ID of the updated stack
 	 */
 	public String updateStack(String templateBody) throws Exception  {
-		return client.updateStack(new UpdateStackRequest()
-			.withStackName(config.getName())
-			.withTemplateURL(uploadCfnTemplateToS3(config.getName(), "update", templateBody))
-			.withCapabilities("CAPABILITY_IAM")
-			.withParameters(getTemplateParameters())).getStackId() ;
+		return client.updateStack(new UpdateStackRequest().withStackName(config.getName())
+				.withTemplateURL(uploadCfnTemplateToS3(config.getName(), "update", templateBody))
+				.withCapabilities("CAPABILITY_IAM")
+				.withParameters(templateParameters.getApplicableParameters(templateBody))).getStackId();
 	}
 
 	/**
@@ -333,8 +317,7 @@ public class CloudFormationClient {
 	 * @param stackName name of the stack that needs to be deleted
 	 */
 	public void deleteStack(String stackName) {
-		client.deleteStack(new DeleteStackRequest()
-			.withStackName(stackName)) ;
+		client.deleteStack(new DeleteStackRequest().withStackName(stackName));
 	}
 	
     /**
@@ -343,28 +326,8 @@ public class CloudFormationClient {
 	 * @param stack the stack
 	 */
 	public void printStackOutputs(Stack stack) {
-		for (Output outputs : stack.getOutputs())
+		for (Output outputs : stack.getOutputs()) {
 			logger.info("Output Variable: Key=" + outputs.getOutputKey() + " Value=" + outputs.getOutputValue());
-	}
-	
-	
-	private List<Tag> getTemplateTags() {
-		List<Tag> tags = new ArrayList<>();
-		for(String key: config.getTags().keySet()) {
-			tags.add(new Tag()
-				.withKey(key)
-				.withValue(config.getTags().get(key)));
 		}
-		return tags;
-	}
-	
-	private List<Parameter> getTemplateParameters() {
-		List<Parameter> params = new ArrayList<>();
-		for (String key: config.getParameters().keySet()) {
-			params.add(new Parameter()
-				.withParameterKey(key)
-				.withParameterValue(config.getParameters().get(key)));
-		}
-		return params;
 	}
 }

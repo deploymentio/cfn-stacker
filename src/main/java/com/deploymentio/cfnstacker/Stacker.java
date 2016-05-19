@@ -3,9 +3,11 @@ package com.deploymentio.cfnstacker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.amazonaws.services.cloudformation.model.Stack;
 import com.deploymentio.cfnstacker.config.JsonFileStackConfigCreator;
 import com.deploymentio.cfnstacker.config.StackConfig;
 import com.deploymentio.cfnstacker.config.StackConfigCreator;
+import com.deploymentio.cfnstacker.template.JsonNodeHelper;
 
 public class Stacker {
 	
@@ -28,49 +30,52 @@ public class Stacker {
 
 		StackConfigCreator configCreator = new JsonFileStackConfigCreator(stackConfigFile);
 		StackConfig stackConfig = configCreator.getStackConfig();
-		CloudFormationClient client = new CloudFormationClient().withConfig(stackConfig);
-		JsonNodeHelper jsonNodeHelper = new JsonNodeHelper().withConfig(stackConfig);
-		ProgressTracker tracker = new ProgressTracker();
+		CloudFormationClient client = new CloudFormationClient(stackConfig);
+		JsonNodeHelper jsonNodeHelper = new JsonNodeHelper(stackConfig);
+		OperationTracker tracker = new OperationTracker();
 		
 		// see what state the stack is in
-		Status status = client.getStackExecutionStatus(stackConfig.getName());
+		Stack stack = client.findStack(stackConfig.getName()) ;
+		Status status = Status.valueOf(stack);
+
+		// perform the operation we want
 		if (action.isAllowed(status)) {
 			
 			logger.info("About to take action: Action=" + action.name() + " Status=" + status.name());
 			switch(action) {
 				
 				case CREATE:
-					return new CloudFormationClientExecutor(client, jsonNodeHelper, tracker) {
-						@Override protected String executeStack(String stackName, String templateBody, CloudFormationClient client) throws Exception {
+					return new Operation(client, jsonNodeHelper, tracker) {
+						@Override protected String execute(String stackName, String templateBody, CloudFormationClient client) throws Exception {
 							return client.createStack(templateBody, false);
 						}
 					}.validateAndExecuteStack(stackConfig, "create", false);
 
 				case CREATE_DRY_RUN:
-					return new CloudFormationClientExecutor(client, jsonNodeHelper, tracker) {
-						@Override protected String executeStack(String stackName, String templateBody, CloudFormationClient client) throws Exception {
+					return new Operation(client, jsonNodeHelper, tracker) {
+						@Override protected String execute(String stackName, String templateBody, CloudFormationClient client) throws Exception {
 							return client.createStack(templateBody, false);
 						}
 					}.validateAndExecuteStack(stackConfig, "create", true);
 
 				case DELETE:
-					return new CloudFormationClientExecutor(client, jsonNodeHelper, tracker) {
-						@Override protected String executeStack(String stackName, String templateBody, CloudFormationClient client) throws Exception {
+					return new Operation(client, jsonNodeHelper, tracker) {
+						@Override protected String execute(String stackName, String templateBody, CloudFormationClient client) throws Exception {
 							client.deleteStack(stackName);
 							return null;
 						}
 					}.validateAndExecuteStack(stackConfig, "delete", false);
 					
 				case UPDATE:
-					return new CloudFormationClientExecutor(client, jsonNodeHelper, tracker) {
-						@Override protected String executeStack(String stackName, String templateBody, CloudFormationClient client) throws Exception {
+					return new Operation(client, jsonNodeHelper, tracker) {
+						@Override protected String execute(String stackName, String templateBody, CloudFormationClient client) throws Exception {
 							return client.updateStack(templateBody);
 						}
 					}.validateAndExecuteStack(stackConfig, "update", false);
 
 				case UPDATE_DRY_RUN:
-					return new CloudFormationClientExecutor(client, jsonNodeHelper, tracker) {
-						@Override protected String executeStack(String stackName, String templateBody, CloudFormationClient client) throws Exception {
+					return new Operation(client, jsonNodeHelper, tracker) {
+						@Override protected String execute(String stackName, String templateBody, CloudFormationClient client) throws Exception {
 							return client.updateStack(templateBody);
 						}
 					}.validateAndExecuteStack(stackConfig, "update", true);

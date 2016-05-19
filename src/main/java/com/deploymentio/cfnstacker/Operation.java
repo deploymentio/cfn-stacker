@@ -11,16 +11,18 @@ import org.slf4j.LoggerFactory;
 import com.amazonaws.services.cloudformation.model.StackResource;
 import com.deploymentio.cfnstacker.config.StackConfig;
 import com.deploymentio.cfnstacker.config.SubStackConfig;
+import com.deploymentio.cfnstacker.template.JsonFormatter;
+import com.deploymentio.cfnstacker.template.JsonNodeHelper;
 
-public abstract class CloudFormationClientExecutor {
+public abstract class Operation {
 	
-	private final static Logger logger = LoggerFactory.getLogger(CloudFormationClientExecutor.class);
+	private final static Logger logger = LoggerFactory.getLogger(Operation.class);
 
 	private CloudFormationClient client;
 	private JsonNodeHelper jsonNodeHelper;
-	private ProgressTracker tracker;
+	private OperationTracker tracker;
 	
-	public CloudFormationClientExecutor(CloudFormationClient client, JsonNodeHelper jsonNodeHelper, ProgressTracker tracker) {
+	public Operation(CloudFormationClient client, JsonNodeHelper jsonNodeHelper, OperationTracker tracker) {
 		this.client = client;
 		this.jsonNodeHelper = jsonNodeHelper;
 		this.tracker = tracker;
@@ -37,6 +39,7 @@ public abstract class CloudFormationClientExecutor {
 	 */
 	public boolean validateAndExecuteStack (StackConfig options, String action, boolean validateOnly) throws Exception {
 		
+		JsonFormatter formatter = new JsonFormatter();
 		String stackName = options.getName() ;
 		String templateBody = null ;
 		boolean validated = false ;
@@ -45,10 +48,10 @@ public abstract class CloudFormationClientExecutor {
 			
 			if (!"create".equals(action)) {
 				// print the existing values
-				jsonNodeHelper.writeFormattedJSONString(client.getTemplateValue(stackName), new File(".template-existing.json")) ;
+				formatter.writeFormattedJSONString(client.getTemplateValue(stackName), new File(".template-existing.json")) ;
 				for (StackResource res: client.getStackResources(stackName)) {
 					String subStackName = res.getLogicalResourceId();
-					jsonNodeHelper.writeFormattedJSONString(client.getTemplateValue(res.getPhysicalResourceId()), new File(".template-existing-" + subStackName + ".json")) ;
+					formatter.writeFormattedJSONString(client.getTemplateValue(res.getPhysicalResourceId()), new File(".template-existing-" + subStackName + ".json")) ;
 				}
 			}
 			
@@ -62,7 +65,7 @@ public abstract class CloudFormationClientExecutor {
 				if (client.validateSubStackTemplate(templateUrl)) {
 					logger.info("SubStack template with name '" + subStackName + "' is valid") ;
 					subStackTemplateUrls.put(subStackName, templateUrl);
-					jsonNodeHelper.writeFormattedJSONString(subStackBody, new File(".template-new-" + subStackName + ".json")) ;
+					formatter.writeFormattedJSONString(subStackBody, new File(".template-new-" + subStackName + ".json")) ;
 				} else {
 					logger.error("SubStack template with name '" + subStackName + "' is NOT valid") ;
 					allSubStacksValid = false;
@@ -91,7 +94,7 @@ public abstract class CloudFormationClientExecutor {
 			
 			// execute the code
 			logger.info("Attempting to " + action + " stack with name '" + stackName + "'") ;
-			String stackId = executeStack(stackName, templateBody, client) ;
+			String stackId = execute(stackName, templateBody, client) ;
 
 			// track its progress
 			tracker.track(client, stackName, stackId, 30).waitUntilCompletion();
@@ -102,7 +105,7 @@ public abstract class CloudFormationClientExecutor {
 		}
 
 		if(validated && validateOnly) {
-			jsonNodeHelper.writeFormattedJSONString(templateBody, new File(".template-new.json")) ;
+			formatter.writeFormattedJSONString(templateBody, new File(".template-new.json")) ;
 		}
 
 		return validated;
@@ -116,7 +119,7 @@ public abstract class CloudFormationClientExecutor {
 	
 	/**
 	 * Executes a stack operation. This method is called from
-	 * {@link CloudFormationClientExecutor#validateAndExecuteStack(String)}
+	 * {@link Operation#validateAndExecuteStack(String)}
 	 * after the stack operation has been validated.
 	 * 
 	 * @param stackName stack name
@@ -125,5 +128,5 @@ public abstract class CloudFormationClientExecutor {
 	 * @return the stack ID of the stack on which the operation was just
 	 *         executed
 	 */
-	protected abstract String executeStack(String stackName, String templateBody, CloudFormationClient client) throws Exception ;
+	protected abstract String execute(String stackName, String templateBody, CloudFormationClient client) throws Exception ;
 }

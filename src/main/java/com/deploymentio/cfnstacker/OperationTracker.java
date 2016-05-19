@@ -2,6 +2,7 @@ package com.deploymentio.cfnstacker;
 
 import java.util.Date;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutorService;
@@ -11,9 +12,12 @@ import java.util.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ProgressTracker {
+import com.amazonaws.services.cloudformation.model.StackEvent;
+import com.amazonaws.util.DateUtils;
+
+public class OperationTracker {
 	
-	private final static Logger logger = LoggerFactory.getLogger(ProgressTracker.class);
+	private final static Logger logger = LoggerFactory.getLogger(OperationTracker.class);
 	
 	private Map<String, ProgressTrackerRecord> trackerRecords = new ConcurrentHashMap<>();
 	private ConcurrentSkipListSet<String> stackNames = new ConcurrentSkipListSet<>();
@@ -32,11 +36,49 @@ public class ProgressTracker {
 	 * @param checkIntervalSeconds
 	 *            how often to check the stack operation's progress
 	 */
-	public ProgressTracker track(CloudFormationClient client, String stackName, String stackId, int checkIntervalSeconds) {
+	public OperationTracker track(final CloudFormationClient client, final String stackName, final String stackId, final int checkIntervalSeconds) {
 		
 		if (stackNames.add(stackName)) {
 			logger.info("Tracking Stack: Name=" + stackName + " ID=" + stackId);
-			Future<String> future = executor.submit(new ProgressTrackerTask(this, client, stackName, stackId, checkIntervalSeconds));
+			Future<String> future = executor.submit(new Callable<String>() {
+				@Override public String call() throws Exception {
+					// set the time to be a minute in the past - this is to account for any
+					// time differences between the local clock and clock on CFN servers
+					Date startTime = new Date(System.currentTimeMillis()-60000) ;
+					while(true) {
+						
+						if (logger.isTraceEnabled()) {
+							logger.trace("Waiting for completion: StartDate=" + DateUtils.formatISO8601Date(startTime)) ;
+						}
+						
+						// display all events and look for the final event for the stack itself
+						boolean getOutLater = false ;
+						for (StackEvent evt : client.getStackEvents(stackId, startTime, OperationTracker.this, checkIntervalSeconds)) {
+							
+							if (evt.getResourceType().equals("AWS::CloudFormation::Stack")) {
+								
+								if (evt.getPhysicalResourceId().equals(stackId)) {
+									getOutLater = true ;
+								}
+							}
+								
+							// record the latest timestamp
+							if (evt.getTimestamp().after(startTime))
+								startTime = evt.getTimestamp() ;
+							
+							logger.info("Date=" + DateUtils.formatISO8601Date(evt.getTimestamp()) + " Stack=" + stackName + " Type=" + evt.getResourceType() + " ID=" + evt.getLogicalResourceId() + " Status=" + evt.getResourceStatus());
+						}
+								
+						if (getOutLater) {
+							break ;
+						} else {
+							Thread.sleep(checkIntervalSeconds*1000);
+						}
+					}
+
+					return stackId;
+				}
+			});
 			trackerRecords.put(stackId, new ProgressTrackerRecord(stackName, future));
 		} else {
 			logger.debug("Ignoring Stack: Name=" + stackName);

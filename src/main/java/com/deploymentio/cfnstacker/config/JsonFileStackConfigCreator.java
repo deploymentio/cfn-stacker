@@ -7,7 +7,6 @@ import java.util.Map;
 import org.apache.commons.io.IOUtils;
 import org.apache.velocity.VelocityContext;
 
-import com.deploymentio.cfnstacker.JsonNodeParseResult;
 import com.deploymentio.cfnstacker.template.VelocityTemplateHelper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,12 +32,12 @@ public class JsonFileStackConfigCreator implements StackConfigCreator {
 	}
 
 	@Override
-	public JsonNodeParseResult loadStackTemplate(Fragment fragment, Map<String, String> baseParmeters) {
+	public JsonParseResult loadStackTemplate(Fragment fragment, Map<String, String> baseParmeters) {
 		String fragmentPath = fragment.getPath();
 		File file = new File(baseDir, fragmentPath);
 		if (!file.exists()) {
 			String error = "File=" + fragmentPath + " Error=MissingTemplate FullPath=" + file.getAbsolutePath();
-			return new JsonNodeParseResult(error);
+			return new JsonParseResult(error);
 		} else {
 			try(FileReader reader = new FileReader(file)) {
 				String fileRawContent = IOUtils.toString(reader);
@@ -47,9 +46,9 @@ public class JsonFileStackConfigCreator implements StackConfigCreator {
 				String fileContent = templateHelper.evaluate(fragmentPath, fileRawContent, context);
 				
 				JsonNode node = mapper.readTree(fileContent);
-				return new JsonNodeParseResult(node); 
+				return new JsonParseResult(node); 
 			} catch (Exception e) {
-				return new JsonNodeParseResult("File=" + fragmentPath + " Error=" + e.getMessage());
+				return new JsonParseResult("File=" + fragmentPath + " Error=" + e.getMessage());
 			}
 		}
 	}

@@ -1,17 +1,17 @@
-package com.deploymentio.cfnstacker;
+package com.deploymentio.cfnstacker.config;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-public class JsonNodeParseResult {
+public class JsonParseResult {
 	
 	private JsonNode node;
 	private String error;
 
-	public JsonNodeParseResult(String error) {
+	public JsonParseResult(String error) {
 		this.error = error;
 	}
 	
-	public JsonNodeParseResult(JsonNode node) {
+	public JsonParseResult(JsonNode node) {
 		this.node = node;
 	}
 	
