@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.cloudformation.model.StackResource;
 import com.deploymentio.cfnstacker.config.StackConfig;
+import com.deploymentio.cfnstacker.config.SubStackConfig;
 
 public abstract class CloudFormationClientExecutor {
 	
@@ -54,8 +55,9 @@ public abstract class CloudFormationClientExecutor {
 			// validate any sub-stacks
 			Map<String, String> subStackTemplateUrls = new HashMap<>();
 			boolean allSubStacksValid = true;
-			for(String subStackName: options.getSubStacks().keySet()) {
-				String subStackBody = jsonNodeHelper.getCombinedJsonStringForSubStack(subStackName);
+			for(SubStackConfig subStackConfig: options.getSubStacks()) {
+				String subStackName = subStackConfig.getName();
+				String subStackBody = jsonNodeHelper.getCombinedJsonStringForSubStack(subStackConfig);
 				String templateUrl = client.uploadCfnTemplateToS3(options.getName(), subStackName, subStackBody);
 				if (client.validateSubStackTemplate(templateUrl)) {
 					logger.info("SubStack template with name '" + subStackName + "' is valid") ;

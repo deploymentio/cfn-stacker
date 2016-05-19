@@ -13,10 +13,9 @@ import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.deploymentio.cfnstacker.config.Fragment;
 import com.deploymentio.cfnstacker.config.StackConfig;
 import com.deploymentio.cfnstacker.config.SubStackConfig;
-import com.deploymentio.cfnstacker.template.Context;
-import com.deploymentio.cfnstacker.template.Scanner;
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -41,18 +40,16 @@ public class JsonNodeHelper {
 	 * 
 	 * @return merged JSON CloudFormation template
 	 */
-	public String getCombinedJsonStringForSubStack(String subStackName) throws Exception {
-
-		SubStackConfig subStackConfig = config.getSubStacks().get(subStackName);
+	public String getCombinedJsonStringForSubStack(SubStackConfig subStackConfig) throws Exception {
 
 		boolean hasErrors = false;
 		JsonNode combinedTemplateNode = null;
 		
-		for (String file: subStackConfig.getFragments()) {
+		for (Fragment f: subStackConfig.getFragments()) {
 			
-			JsonNodeParseResult nodeParseResult = config.getConfigCreator().loadStackTemplate(file);
+			JsonNodeParseResult nodeParseResult = config.getConfigCreator().loadStackTemplate(f, config.getParameters());
 			if (nodeParseResult.hasError()) {
-				logger.error("Error loading sub-stack template fragment: SubStack=" + subStackName + " " + nodeParseResult.getError());
+				logger.error("Error loading sub-stack template fragment: SubStack=" + subStackConfig.getName() + " " + nodeParseResult.getError());
 				hasErrors = true;
 				continue;
 			}
@@ -63,17 +60,10 @@ public class JsonNodeHelper {
 			} else {
 				List<String> errors = mergeJsonNodes(combinedTemplateNode, node) ;
 				for (String err : errors) {
-					logger.error("Duplicate keys while merging template fragments: File=" + file + " Key=" + err) ;
+					logger.error("Duplicate keys while merging template fragments: File=" + f + " Key=" + err) ;
 					hasErrors = true ;
 				}
 			}
-		}
-		
-		if (!hasErrors) {
-			Scanner scanner = new Scanner();
-			Context context = new Context(config.getParameters());
-			context.putAll(subStackConfig.getParameters());
-			combinedTemplateNode = scanner.scanAndExecute(context, combinedTemplateNode);
 		}
 		
 		return hasErrors ? null : combinedTemplateNode.toString();
@@ -93,9 +83,9 @@ public class JsonNodeHelper {
 		boolean hasErrors = false;
 		JsonNode combinedTemplateNode = null;
 		
-		for (String file: config.getFragments()) {
+		for (Fragment f: config.getFragments()) {
 			
-			JsonNodeParseResult nodeParseResult = config.getConfigCreator().loadStackTemplate(file);
+			JsonNodeParseResult nodeParseResult = config.getConfigCreator().loadStackTemplate(f, config.getParameters());
 			if (nodeParseResult.hasError()) {
 				logger.error("Error loading stack template fragment: " + nodeParseResult.getError());
 				hasErrors = true;
@@ -108,17 +98,13 @@ public class JsonNodeHelper {
 			} else {
 				List<String> errors = mergeJsonNodes(combinedTemplateNode, node) ;
 				for (String err : errors) {
-					logger.error("Duplicate keys while merging template fragments: File=" + file + " Key=" + err) ;
+					logger.error("Duplicate keys while merging template fragments: File=" + f.getPath() + " Key=" + err) ;
 					hasErrors = true ;
 				}
 			}
 		}
 
 		if (!hasErrors) {
-			Scanner scanner = new Scanner();
-			Context context = new Context(config.getParameters());
-			combinedTemplateNode = scanner.scanAndExecute(context, combinedTemplateNode);
-
 			ObjectNode parameters = (ObjectNode) combinedTemplateNode.get("Parameters");
 			for (String key: subStackTemplateUrls.keySet()) {
 				String value = subStackTemplateUrls.get(key);

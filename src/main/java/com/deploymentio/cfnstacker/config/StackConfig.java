@@ -15,21 +15,19 @@ public class StackConfig {
 	private String s3Prefix;
 	private String s3Bucket;
 	private Map<String, String> parameters = new HashMap<>();
-	private Map<String, SubStackConfig> subStacks = new HashMap<>();
+	private List<SubStackConfig> subStacks = new ArrayList<>();
 	private Map<String, String> tags = new HashMap<>();
-	private List<String> fragments = new ArrayList<>();
+	private List<Fragment> fragments = new ArrayList<>();
 	
 	public String getName() {
 		return name;
 	}
-	@JsonSetter("Name")
 	public void setName(String name) {
 		this.name = name;
 	}
 	public String getS3Prefix() {
 		return s3Prefix;
 	}
-	@JsonSetter("S3Prefix")
 	public void setS3Prefix(String s3Prefix) {
 		if (s3Prefix.startsWith("/")) {
 			s3Prefix = s3Prefix.substring(1);
@@ -42,7 +40,6 @@ public class StackConfig {
 	public String getS3Bucket() {
 		return s3Bucket;
 	}
-	@JsonSetter("S3Bucket")
 	public void setS3Bucket(String s3Bucket) {
 		this.s3Bucket = s3Bucket;
 	}
@@ -55,36 +52,31 @@ public class StackConfig {
 	public String getSnsTopic() {
 		return snsTopic;
 	}
-	@JsonSetter("SnsTopic")
 	public void setSnsTopic(String snsTopic) {
 		this.snsTopic = snsTopic;
 	}
 	public Map<String, String> getParameters() {
 		return parameters;
 	}
-	@JsonSetter("Parameters")
 	public void setParameters(Map<String, String> paramaters) {
 		this.parameters = paramaters;
 	}
-	public Map<String, SubStackConfig> getSubStacks() {
+	public List<SubStackConfig> getSubStacks() {
 		return subStacks;
 	}
-	@JsonSetter("SubStacks")
-	public void setSubStacks(Map<String, SubStackConfig> subStacks) {
+	public void setSubStacks(List<SubStackConfig> subStacks) {
 		this.subStacks = subStacks;
 	}
 	public Map<String, String> getTags() {
 		return tags;
 	}
-	@JsonSetter("Tags")
 	public void setTags(Map<String, String> tags) {
 		this.tags = tags;
 	}
-	public List<String> getFragments() {
+	public List<Fragment> getFragments() {
 		return fragments;
 	}
-	@JsonSetter("Fragments")
-	public void setFragments(List<String> fragments) {
+	public void setFragments(List<Fragment> fragments) {
 		this.fragments = fragments;
 	}
 }

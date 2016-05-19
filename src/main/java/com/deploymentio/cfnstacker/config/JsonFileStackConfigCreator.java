@@ -1,8 +1,14 @@
 package com.deploymentio.cfnstacker.config;
 
 import java.io.File;
+import java.io.FileReader;
+import java.util.Map;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.velocity.VelocityContext;
 
 import com.deploymentio.cfnstacker.JsonNodeParseResult;
+import com.deploymentio.cfnstacker.template.VelocityTemplateHelper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -11,12 +17,14 @@ public class JsonFileStackConfigCreator implements StackConfigCreator {
 	private ObjectMapper mapper = new ObjectMapper();
 	private File baseDir;
 	private StackConfig config;
+	private VelocityTemplateHelper templateHelper;
 	
 	public JsonFileStackConfigCreator(String path) throws Exception {
 		File file = new File(path);
 		baseDir = file.getParentFile();
 		config = mapper.readValue(file, StackConfig.class);
 		config.setConfigCreator(this);
+		templateHelper = new VelocityTemplateHelper();
 	}
 	
 	@Override
@@ -25,17 +33,23 @@ public class JsonFileStackConfigCreator implements StackConfigCreator {
 	}
 
 	@Override
-	public JsonNodeParseResult loadStackTemplate(String templatePathName) {
-		File file = new File(baseDir, templatePathName);
+	public JsonNodeParseResult loadStackTemplate(Fragment fragment, Map<String, String> baseParmeters) {
+		String fragmentPath = fragment.getPath();
+		File file = new File(baseDir, fragmentPath);
 		if (!file.exists()) {
-			String error = "File=" + templatePathName + " Error=MissingTemplate FullPath=" + file.getAbsolutePath();
+			String error = "File=" + fragmentPath + " Error=MissingTemplate FullPath=" + file.getAbsolutePath();
 			return new JsonNodeParseResult(error);
 		} else {
-			try {
-				JsonNode node = mapper.readTree(file);
+			try(FileReader reader = new FileReader(file)) {
+				String fileRawContent = IOUtils.toString(reader);
+				
+				VelocityContext context = templateHelper.createContext(baseParmeters, fragment.getParameters());
+				String fileContent = templateHelper.evaluate(fragmentPath, fileRawContent, context);
+				
+				JsonNode node = mapper.readTree(fileContent);
 				return new JsonNodeParseResult(node); 
 			} catch (Exception e) {
-				return new JsonNodeParseResult("File=" + templatePathName + " Error=" + e.getMessage());
+				return new JsonNodeParseResult("File=" + fragmentPath + " Error=" + e.getMessage());
 			}
 		}
 	}
