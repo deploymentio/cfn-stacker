@@ -16,11 +16,10 @@ public class TemplateParameters {
 		this.config = config;
 	}
 
-	public List<Parameter> getApplicableParameters(String templateBodyJson) throws Exception {
+	public List<Parameter> getApplicableParameters(JsonNode templateBodyJson) throws Exception {
 		
 		ObjectMapper mapper = new ObjectMapper();
-		JsonNode templateNode = mapper.readTree(templateBodyJson);
-		JsonNode parametersNode = templateNode.get("Parameters");
+		JsonNode parametersNode = templateBodyJson.get("Parameters");
 		
 		List<Parameter> params = new ArrayList<>();
 		for (String key: config.getParameters().keySet()) {

@@ -17,19 +17,21 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 public class JsonFormatter {
 	
 	private final static Logger logger = LoggerFactory.getLogger(JsonFormatter.class);
-
+	private ObjectMapper mapper;
+	
+	public JsonFormatter() {
+		mapper = new ObjectMapper();
+		mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
+		mapper.configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
+	}
+	
 	/**
 	 * Write formatted version of the given JSON string to the given file.
 	 */
-	public void writeFormattedJSONString(String json, File file) throws IOException, JsonGenerationException, JsonMappingException {
+	public void writeFormattedJSONString(JsonNode node, File file) throws IOException, JsonGenerationException, JsonMappingException {
 		
-		ObjectMapper objectMapper = new ObjectMapper();
-		JsonNode node = objectMapper.readTree(json);
-		objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
-		objectMapper.configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
-
 		FileWriter writer = new FileWriter(file) ;
-		objectMapper.writeValue(writer, node);
+		mapper.writeValue(writer, node);
 		
 		IOUtils.closeQuietly(writer) ;
 		logger.info("Wrote formatted JSON: File=" + file.getAbsolutePath());

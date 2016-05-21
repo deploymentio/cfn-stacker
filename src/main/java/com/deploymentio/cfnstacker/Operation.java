@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,6 +12,7 @@ import com.deploymentio.cfnstacker.config.StackConfig;
 import com.deploymentio.cfnstacker.config.SubStackConfig;
 import com.deploymentio.cfnstacker.template.JsonFormatter;
 import com.deploymentio.cfnstacker.template.JsonNodeHelper;
+import com.fasterxml.jackson.databind.JsonNode;
 
 public abstract class Operation {
 	
@@ -41,7 +41,7 @@ public abstract class Operation {
 		
 		JsonFormatter formatter = new JsonFormatter();
 		String stackName = options.getName() ;
-		String templateBody = null ;
+		JsonNode templateBody = null ;
 		boolean validated = false ;
 		
 		try {
@@ -60,7 +60,7 @@ public abstract class Operation {
 			boolean allSubStacksValid = true;
 			for(SubStackConfig subStackConfig: options.getSubStacks()) {
 				String subStackName = subStackConfig.getName();
-				String subStackBody = jsonNodeHelper.getCombinedJsonStringForSubStack(subStackConfig);
+				JsonNode subStackBody = jsonNodeHelper.getSubStackMergedJson(subStackConfig);
 				String templateUrl = client.uploadCfnTemplateToS3(options.getName(), subStackName, subStackBody);
 				if (client.validateSubStackTemplate(templateUrl)) {
 					logger.info("SubStack template with name '" + subStackName + "' is valid") ;
@@ -76,7 +76,7 @@ public abstract class Operation {
 			// validate the main stack
 			if (allSubStacksValid) {
 				
-				templateBody = jsonNodeHelper.getCombinedJsonString(subStackTemplateUrls);
+				templateBody = jsonNodeHelper.getStackMergedJson(subStackTemplateUrls);
 				validated = validateTemplateBody(templateBody);
 				
 				if (!validated) {
@@ -111,9 +111,10 @@ public abstract class Operation {
 		return validated;
 	}
 
-	protected boolean validateTemplateBody(String templateBody) throws Exception {
-		if (!StringUtils.isEmpty(templateBody))
-			return client.validateTemplate(templateBody) ;
+	protected boolean validateTemplateBody(JsonNode templateBody) throws Exception {
+		if (templateBody != null) {
+			return client.validateTemplate(templateBody);
+		}
 		return false ;
 	}
 	
@@ -128,5 +129,5 @@ public abstract class Operation {
 	 * @return the stack ID of the stack on which the operation was just
 	 *         executed
 	 */
-	protected abstract String execute(String stackName, String templateBody, CloudFormationClient client) throws Exception ;
+	protected abstract String execute(String stackName, JsonNode templateBody, CloudFormationClient client) throws Exception ;
 }

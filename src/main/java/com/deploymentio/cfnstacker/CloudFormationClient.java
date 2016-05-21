@@ -1,7 +1,6 @@
 package com.deploymentio.cfnstacker;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -9,7 +8,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +38,10 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.util.DateUtils;
 import com.deploymentio.cfnstacker.config.StackConfig;
+import com.deploymentio.cfnstacker.template.JsonFormatter;
 import com.deploymentio.cfnstacker.template.TemplateParameters;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class CloudFormationClient {
 	
@@ -48,6 +49,7 @@ public class CloudFormationClient {
 
 	protected AmazonS3 s3Client = new AmazonS3Client();
 	protected AmazonCloudFormation client = new AmazonCloudFormationClient();
+	protected JsonFormatter formatter = new JsonFormatter();
 
 	private StackConfig config;
 	private TemplateParameters templateParameters;
@@ -212,8 +214,9 @@ public class CloudFormationClient {
 	/**
 	 * Looks up a stack's template from Cloud formation
 	 */
-	public String getTemplateValue(String stackName) {
-		return client.getTemplate(new GetTemplateRequest().withStackName(stackName)).getTemplateBody() ;
+	public JsonNode getTemplateValue(String stackName) throws Exception {
+		String templateBody = client.getTemplate(new GetTemplateRequest().withStackName(stackName)).getTemplateBody();
+		return new ObjectMapper().readTree(templateBody);
 	}
 	
 	/**
@@ -225,7 +228,7 @@ public class CloudFormationClient {
 	 * @return <code>true</code> if the stack is valid, <code>false</code>
 	 *         otherwise
 	 */
-	public boolean validateTemplate(String templateBody) throws Exception {
+	public boolean validateTemplate(JsonNode templateBody) throws Exception {
 
 		boolean allOK = true ;
 		Map<String, String> stackProperties = config.getParameters();
@@ -261,12 +264,10 @@ public class CloudFormationClient {
 	 * @param templateBody the template body (JSON)
 	 * @return the URL to the s3 resource
 	 */
-	protected String uploadCfnTemplateToS3(String name, String type, String templateBody) throws Exception {
+	protected String uploadCfnTemplateToS3(String name, String type, JsonNode templateBody) throws Exception {
 
-		File file = File.createTempFile(name  + "-" + type + "-", ".json") ;
-		try(FileWriter writer = new FileWriter(file)) {
-			IOUtils.write(templateBody, writer);
-		}
+		File file = File.createTempFile(name  + "-" + type + "-", ".json");
+		formatter.writeFormattedJSONString(templateBody, file);
 		
 		String key = config.getS3Prefix() + file.getName() ;
 		s3Client.putObject(config.getS3Bucket(), key, file) ;
@@ -286,7 +287,7 @@ public class CloudFormationClient {
 	 *        from
 	 * @return ID of the new stack
 	 */
-	public String createStack(String templateBody, boolean disableRollback) throws Exception {
+	public String createStack(JsonNode templateBody, boolean disableRollback) throws Exception {
 		List<Tag> tags = new ArrayList<>();
 		for (String key : config.getTags().keySet()) {
 			tags.add(new Tag().withKey(key).withValue(config.getTags().get(key)));
@@ -304,7 +305,7 @@ public class CloudFormationClient {
 	 * @param templateBody updated ClouadFormation JSON template
 	 * @return ID of the updated stack
 	 */
-	public String updateStack(String templateBody) throws Exception  {
+	public String updateStack(JsonNode templateBody) throws Exception  {
 		return client.updateStack(new UpdateStackRequest().withStackName(config.getName())
 				.withTemplateURL(uploadCfnTemplateToS3(config.getName(), "update", templateBody))
 				.withCapabilities("CAPABILITY_IAM")

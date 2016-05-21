@@ -8,6 +8,7 @@ import com.deploymentio.cfnstacker.config.JsonFileStackConfigCreator;
 import com.deploymentio.cfnstacker.config.StackConfig;
 import com.deploymentio.cfnstacker.config.StackConfigCreator;
 import com.deploymentio.cfnstacker.template.JsonNodeHelper;
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class Stacker {
 	
@@ -46,21 +47,21 @@ public class Stacker {
 				
 				case CREATE:
 					return new Operation(client, jsonNodeHelper, tracker) {
-						@Override protected String execute(String stackName, String templateBody, CloudFormationClient client) throws Exception {
+						@Override protected String execute(String stackName, JsonNode templateBody, CloudFormationClient client) throws Exception {
 							return client.createStack(templateBody, false);
 						}
 					}.validateAndExecuteStack(stackConfig, "create", false);
 
 				case CREATE_DRY_RUN:
 					return new Operation(client, jsonNodeHelper, tracker) {
-						@Override protected String execute(String stackName, String templateBody, CloudFormationClient client) throws Exception {
+						@Override protected String execute(String stackName, JsonNode templateBody, CloudFormationClient client) throws Exception {
 							return client.createStack(templateBody, false);
 						}
 					}.validateAndExecuteStack(stackConfig, "create", true);
 
 				case DELETE:
 					return new Operation(client, jsonNodeHelper, tracker) {
-						@Override protected String execute(String stackName, String templateBody, CloudFormationClient client) throws Exception {
+						@Override protected String execute(String stackName, JsonNode templateBody, CloudFormationClient client) throws Exception {
 							client.deleteStack(stackName);
 							return null;
 						}
@@ -68,14 +69,14 @@ public class Stacker {
 					
 				case UPDATE:
 					return new Operation(client, jsonNodeHelper, tracker) {
-						@Override protected String execute(String stackName, String templateBody, CloudFormationClient client) throws Exception {
+						@Override protected String execute(String stackName, JsonNode templateBody, CloudFormationClient client) throws Exception {
 							return client.updateStack(templateBody);
 						}
 					}.validateAndExecuteStack(stackConfig, "update", false);
 
 				case UPDATE_DRY_RUN:
 					return new Operation(client, jsonNodeHelper, tracker) {
-						@Override protected String execute(String stackName, String templateBody, CloudFormationClient client) throws Exception {
+						@Override protected String execute(String stackName, JsonNode templateBody, CloudFormationClient client) throws Exception {
 							return client.updateStack(templateBody);
 						}
 					}.validateAndExecuteStack(stackConfig, "update", true);

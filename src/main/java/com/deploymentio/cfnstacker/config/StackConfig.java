@@ -5,11 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JsonSetter;
-
-public class StackConfig {
+public class StackConfig extends BaseStackConfig {
 	
-	private String name;
 	private StackConfigCreator configCreator;
 	private String snsTopic;
 	private String s3Prefix;
@@ -17,14 +14,7 @@ public class StackConfig {
 	private Map<String, String> parameters = new HashMap<>();
 	private List<SubStackConfig> subStacks = new ArrayList<>();
 	private Map<String, String> tags = new HashMap<>();
-	private List<Fragment> fragments = new ArrayList<>();
 	
-	public String getName() {
-		return name;
-	}
-	public void setName(String name) {
-		this.name = name;
-	}
 	public String getS3Prefix() {
 		return s3Prefix;
 	}
@@ -72,11 +62,5 @@ public class StackConfig {
 	}
 	public void setTags(Map<String, String> tags) {
 		this.tags = tags;
-	}
-	public List<Fragment> getFragments() {
-		return fragments;
-	}
-	public void setFragments(List<Fragment> fragments) {
-		this.fragments = fragments;
 	}
 }

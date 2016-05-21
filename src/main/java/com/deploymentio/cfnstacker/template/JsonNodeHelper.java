@@ -22,7 +22,7 @@ public class JsonNodeHelper {
 		this.config = config;
 	}
 
-	protected FragmentMergeResult getCombinedJsonString(List<Fragment> fragments, String errorMessage) throws Exception {
+	protected FragmentMergeResult getMergedFragments(List<Fragment> fragments, String errorMessage) throws Exception {
 
 		boolean hasErrors = false;
 		JsonNode combinedTemplateNode = null;
@@ -59,9 +59,9 @@ public class JsonNodeHelper {
 	 * 
 	 * @return merged JSON CloudFormation template
 	 */
-	public String getCombinedJsonStringForSubStack(SubStackConfig subStackConfig) throws Exception {
-		FragmentMergeResult result = getCombinedJsonString(subStackConfig.getFragments(), "Error loading sub-stack template fragment: SubStack=" + subStackConfig.getName());
-		return result.errors ? null : result.combinedTemplateNode.toString();
+	public JsonNode getSubStackMergedJson(SubStackConfig subStackConfig) throws Exception {
+		FragmentMergeResult result = getMergedFragments(subStackConfig.getFragments(), "Error loading sub-stack template fragment: SubStack=" + subStackConfig.getName());
+		return result.errors ? null : result.combinedTemplateNode;
 	}
 
 	/**
@@ -73,8 +73,8 @@ public class JsonNodeHelper {
 	 *            parameters
 	 * @return merged JSON CloudFormation template
 	 */
-	public String getCombinedJsonString(Map<String, String> subStackTemplateUrls) throws Exception {
-		FragmentMergeResult result = getCombinedJsonString(config.getFragments(), "Error loading stack template fragment:");
+	public JsonNode getStackMergedJson(Map<String, String> subStackTemplateUrls) throws Exception {
+		FragmentMergeResult result = getMergedFragments(config.getFragments(), "Error loading stack template fragment:");
 		if (!result.errors) {
 			ObjectNode parameters = (ObjectNode) result.combinedTemplateNode.get("Parameters");
 			for (String key: subStackTemplateUrls.keySet()) {
@@ -84,7 +84,7 @@ public class JsonNodeHelper {
 				.put("Type", "String")
 				.put("Default", value);
 			}
-			return result.combinedTemplateNode.toString();
+			return result.combinedTemplateNode;
 		} else {
 			return null;
 		}
