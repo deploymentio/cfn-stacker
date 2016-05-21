@@ -14,6 +14,7 @@ import org.junit.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 
 public class VelocityTemplateHelperTest {
@@ -86,5 +87,28 @@ public class VelocityTemplateHelperTest {
 		assertEquals(2, converted.size());
 		assertEquals("1", converted.get("k1").toString());
 		assertEquals("2", converted.get("k2").toString());
+	}
+
+	@Test
+	public void testCreateContextWithComplexValue() throws Exception {
+		
+		ObjectNode node = new ObjectMapper().createObjectNode().put("k1", "1");
+		node.putArray("k2").add(1).add("2");
+		
+		HashMap<String, JsonNode> map = new HashMap<>();
+		map.put("key", node);
+		
+		VelocityContext context = helper.createContext(map, null);
+		assertTrue(context.get("key") instanceof Map);
+		
+		Map converted = (Map)context.get("key");
+		assertEquals(2, converted.size());
+		assertEquals("1", converted.get("k1").toString());
+
+		assertTrue(converted.get("k2") instanceof List);
+		List k2List = (List)converted.get("k2");
+		assertEquals(2, k2List.size());
+		assertEquals("1", k2List.get(0).toString());
+		assertEquals("2", k2List.get(1).toString());
 	}
 }
