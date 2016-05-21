@@ -231,16 +231,22 @@ public class CloudFormationClient {
 	public boolean validateTemplate(JsonNode templateBody) throws Exception {
 
 		boolean allOK = true ;
-		Map<String, String> stackProperties = config.getParameters();
+		Map<String, JsonNode> stackProperties = config.getParameters();
 		ValidateTemplateResult validationResult = client.validateTemplate(new ValidateTemplateRequest()
 			.withTemplateURL(uploadCfnTemplateToS3(config.getName(), "validate", templateBody))) ;
 		
 		// check if the template has any parameters without defaults for which no stack properties were provided
 		for (TemplateParameter param : validationResult.getParameters()) {
 			String key = param.getParameterKey() ;
-			if (StringUtils.isEmpty(param.getDefaultValue()) && !stackProperties.containsKey(key)) {
-				logger.error("Missing template parameter value: Key=" + key) ;
-				allOK = false ;
+			if (StringUtils.isEmpty(param.getDefaultValue())) {
+				JsonNode value = stackProperties.get(key);
+				if (value == null) {
+					logger.error("Missing template parameter value: Key=" + key) ;
+					allOK = false ;
+				} else if (value.isContainerNode()) {
+					logger.error("Template parameter can only be a scaler value: Key=" + key) ;
+					allOK = false ;
+				}
 			}
 		}
 		

@@ -1,7 +1,9 @@
 package com.deploymentio.cfnstacker.template;
 
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
@@ -9,6 +11,9 @@ import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.runtime.RuntimeConstants;
 import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class VelocityTemplateHelper {
 
@@ -31,10 +36,32 @@ public class VelocityTemplateHelper {
 		context.put("DOLR", "$");
 	}
 
-	public VelocityContext createContext(Map<String, String> baseMap, Map<String, String> map) {
-		HashMap<String, String> values = new HashMap<>(baseMap);
-		values.putAll(map);
-		return new VelocityContext(values, context);
+	public VelocityContext createContext(Map<String, JsonNode> baseMap, Map<String, JsonNode> map) throws Exception {
+		HashMap<String, JsonNode> values = new HashMap<>();
+		if (baseMap != null) {
+			values.putAll(baseMap);
+		}
+		if (map != null) {
+			values.putAll(map);
+		}
+		
+		// replace all JsonNodes with velocity friendly objects
+		ObjectMapper mapper = new ObjectMapper();
+		VelocityContext thisContext = new VelocityContext(context);
+		for (Map.Entry<String, JsonNode> entry : values.entrySet()) {
+			JsonNode value = entry.getValue();
+			if (value.isContainerNode()) {
+				if (value.isArray()) {
+					thisContext.put(entry.getKey(), mapper.treeToValue(value, VelocityObjectList.class));
+				} else {
+					thisContext.put(entry.getKey(), mapper.treeToValue(value, VelocityObjectMap.class));
+				}
+			} else {
+				thisContext.put(entry.getKey(), value.textValue());
+			}
+		}
+		
+		return thisContext;
 	}
 	
 	public String evaluate (String inputId, String input, VelocityContext context) {

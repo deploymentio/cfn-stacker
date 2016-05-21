@@ -5,13 +5,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 public class StackConfig extends BaseStackConfig {
 	
 	private StackConfigCreator configCreator;
 	private String snsTopic;
 	private String s3Prefix;
 	private String s3Bucket;
-	private Map<String, String> parameters = new HashMap<>();
+	private Map<String, JsonNode> parameters = new HashMap<>();
 	private List<SubStackConfig> subStacks = new ArrayList<>();
 	private Map<String, String> tags = new HashMap<>();
 	
@@ -45,10 +47,10 @@ public class StackConfig extends BaseStackConfig {
 	public void setSnsTopic(String snsTopic) {
 		this.snsTopic = snsTopic;
 	}
-	public Map<String, String> getParameters() {
+	public Map<String, JsonNode> getParameters() {
 		return parameters;
 	}
-	public void setParameters(Map<String, String> paramaters) {
+	public void setParameters(Map<String, JsonNode> paramaters) {
 		this.parameters = paramaters;
 	}
 	public List<SubStackConfig> getSubStacks() {

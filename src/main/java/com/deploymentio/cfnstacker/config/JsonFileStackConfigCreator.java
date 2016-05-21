@@ -32,7 +32,7 @@ public class JsonFileStackConfigCreator implements StackConfigCreator {
 	}
 
 	@Override
-	public JsonParseResult loadStackTemplate(Fragment fragment, Map<String, String> baseParmeters) {
+	public JsonParseResult loadStackTemplate(Fragment fragment, Map<String, JsonNode> baseParmeters) {
 		String fragmentPath = fragment.getPath();
 		File file = new File(baseDir, fragmentPath);
 		if (!file.exists()) {
