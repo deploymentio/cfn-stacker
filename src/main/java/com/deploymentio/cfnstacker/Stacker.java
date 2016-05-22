@@ -17,20 +17,31 @@ public class Stacker {
 	public static void main(String[] args) {
 
 		boolean success = false;
-		Stacker stacker = new Stacker();
-		try {
-			success = stacker.run(args[0], Action.valueOf(args[1]));
-		} catch (Exception e) {
-			e.printStackTrace();
+		
+		StackerOptions options = new StackerOptions(args);
+		if (options.hasErrors()) {
+			for (String err : options.getErrors()) {
+				logger.error(err);
+			}
+		} else {
+			try {
+				success = new Stacker().run(options);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 
 		System.exit(success ? 0 : 1);
 	}
 	
-	public boolean run(String stackConfigFile, Action action) throws Exception {
+	public boolean run(StackerOptions options) throws Exception {
 
-		StackConfigCreator configCreator = new JsonFileStackConfigCreator(stackConfigFile);
+		// loading stack configuration
+		logger.info("Looking at configuration file: File=" + options.getConfigFile().getAbsolutePath());
+		StackConfigCreator configCreator = new JsonFileStackConfigCreator(options.getConfigFile());
 		StackConfig stackConfig = configCreator.getStackConfig();
+		
+		// initializing other helper objects
 		CloudFormationClient client = new CloudFormationClient(stackConfig);
 		JsonNodeHelper jsonNodeHelper = new JsonNodeHelper(stackConfig);
 		OperationTracker tracker = new OperationTracker();
@@ -40,22 +51,23 @@ public class Stacker {
 		Status status = Status.valueOf(stack);
 
 		// perform the operation we want
+		Action action = options.getDesiredAction();
+		logger.info("About to take action: Action=" + action.name() + " Status=" + status.name());
 		if (action.isAllowed(status)) {
 			
-			logger.info("About to take action: Action=" + action.name() + " Status=" + status.name());
 			switch(action) {
 				
 				case CREATE:
 					return new Operation(client, jsonNodeHelper, tracker) {
 						@Override protected String execute(String stackName, JsonNode templateBody, CloudFormationClient client) throws Exception {
-							return client.createStack(templateBody, false);
+							return client.createStack(templateBody, true);
 						}
 					}.validateAndExecuteStack(stackConfig, "create", false);
 
 				case CREATE_DRY_RUN:
 					return new Operation(client, jsonNodeHelper, tracker) {
 						@Override protected String execute(String stackName, JsonNode templateBody, CloudFormationClient client) throws Exception {
-							return client.createStack(templateBody, false);
+							return client.createStack(templateBody, true);
 						}
 					}.validateAndExecuteStack(stackConfig, "create", true);
 

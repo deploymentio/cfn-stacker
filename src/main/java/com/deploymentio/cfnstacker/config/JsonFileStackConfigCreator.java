@@ -13,13 +13,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class JsonFileStackConfigCreator implements StackConfigCreator {
 
+	
+	
 	private ObjectMapper mapper = new ObjectMapper();
 	private File baseDir;
 	private StackConfig config;
 	private VelocityTemplateHelper templateHelper;
 	
-	public JsonFileStackConfigCreator(String path) throws Exception {
-		File file = new File(path);
+	public JsonFileStackConfigCreator(File file) throws Exception {
 		baseDir = file.getParentFile();
 		config = mapper.readValue(file, StackConfig.class);
 		config.setConfigCreator(this);
