@@ -14,6 +14,9 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.StringUtils;
 
+import com.deploymentio.cfnstacker.config.StackConfig;
+import com.deploymentio.cfnstacker.config.StackConfigCreator;
+
 public class StackerOptions {
 
 	protected PrintWriter usageWriter = new PrintWriter(System.err); 
@@ -23,6 +26,7 @@ public class StackerOptions {
 	
 	private Action desiredAction;
 	private File configFile;
+	private StackConfig stackConfig;
 	private List<String> errors = new ArrayList<>();
 	
 	public StackerOptions(String[] args) {
@@ -56,6 +60,12 @@ public class StackerOptions {
 		
 			if (!configFile.exists() || !configFile.isFile()) {
 				errors.add("Config file doesn't exist: Path=" + configFile.getAbsolutePath());
+			} else {
+				try {
+					stackConfig = new StackConfigCreator(configFile).getStackConfig();
+				} catch (Exception e) {
+					errors.add("Can't load stack configuration: File=" + configFile.getAbsolutePath() + " Error=" + e.getClass().getName() + " ErrorMessage=" + e.getMessage());
+				}
 			}
 			
 			try {
@@ -88,5 +98,9 @@ public class StackerOptions {
 	
 	public boolean isTraceEnabled() {
 		return traceEnabled;
+	}
+	
+	public StackConfig getStackConfig() {
+		return stackConfig;
 	}
 }

@@ -4,9 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.cloudformation.model.Stack;
-import com.deploymentio.cfnstacker.config.JsonFileStackConfigCreator;
 import com.deploymentio.cfnstacker.config.StackConfig;
-import com.deploymentio.cfnstacker.config.StackConfigCreator;
 import com.deploymentio.cfnstacker.template.JsonNodeHelper;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -39,12 +37,8 @@ public class Stacker {
 		// fix the logging level first
 		new LogbackLevelChanger(options);
 		
-		// loading stack configuration
-		logger.debug("Looking at configuration file: File=" + options.getConfigFile().getAbsolutePath());
-		StackConfigCreator configCreator = new JsonFileStackConfigCreator(options.getConfigFile());
-		StackConfig stackConfig = configCreator.getStackConfig();
-		
 		// initializing other helper objects
+		StackConfig stackConfig = options.getStackConfig();
 		CloudFormationClient client = new CloudFormationClient(stackConfig);
 		JsonNodeHelper jsonNodeHelper = new JsonNodeHelper(stackConfig);
 		OperationTracker tracker = new OperationTracker();
