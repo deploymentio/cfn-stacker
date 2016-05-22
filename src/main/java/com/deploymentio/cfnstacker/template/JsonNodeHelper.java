@@ -21,37 +21,6 @@ public class JsonNodeHelper {
 	public JsonNodeHelper(StackConfig config) {
 		this.config = config;
 	}
-
-	protected FragmentMergeResult getMergedFragments(List<Fragment> fragments, String errorMessage) throws Exception {
-
-		boolean hasErrors = false;
-		JsonNode combinedTemplateNode = null;
-		JsonNodeMergeHelper mergeHelper = new JsonNodeMergeHelper();
-		
-		for (Fragment f : fragments) {
-			
-			JsonParseResult nodeParseResult = config.getConfigCreator().loadStackTemplate(f, config.getParameters());
-			if (nodeParseResult.hasError()) {
-				logger.error(errorMessage + " " + nodeParseResult.getError());
-				hasErrors = true;
-				continue;
-			}
-			
-			JsonNode node = nodeParseResult.getNode();
-			if (combinedTemplateNode == null) {
-				combinedTemplateNode = node ;
-			} else {
-				List<String> errors = mergeHelper.merge(combinedTemplateNode, node) ;
-				for (String err : errors) {
-					logger.error("Duplicate keys while merging template fragments: File=" + f.getPath() + " Key=" + err) ;
-					hasErrors = true ;
-				}
-			}
-		}
-		
-		return new FragmentMergeResult(combinedTemplateNode, hasErrors);
-	}
-	
 	
 	/**
 	 * Gets complete CloudFormation sub-stack template as a JSON string. The template is
@@ -90,10 +59,40 @@ public class JsonNodeHelper {
 		}
 	}
 	
-	static class FragmentMergeResult {
+	private FragmentMergeResult getMergedFragments(List<Fragment> fragments, String errorMessage) throws Exception {
+
+		boolean hasErrors = false;
+		JsonNode combinedTemplateNode = null;
+		JsonNodeMergeHelper mergeHelper = new JsonNodeMergeHelper();
+		
+		for (Fragment f : fragments) {
+			
+			JsonParseResult nodeParseResult = config.getConfigCreator().loadStackTemplate(f, config.getParameters());
+			if (nodeParseResult.hasError()) {
+				logger.error(errorMessage + " " + nodeParseResult.getError());
+				hasErrors = true;
+				continue;
+			}
+			
+			JsonNode node = nodeParseResult.getNode();
+			if (combinedTemplateNode == null) {
+				combinedTemplateNode = node ;
+			} else {
+				List<String> errors = mergeHelper.merge(combinedTemplateNode, node) ;
+				for (String err : errors) {
+					logger.error("Duplicate keys while merging template fragments: File=" + f.getPath() + " Key=" + err) ;
+					hasErrors = true ;
+				}
+			}
+		}
+		
+		return new FragmentMergeResult(combinedTemplateNode, hasErrors);
+	}
+	
+	private static class FragmentMergeResult {
 		JsonNode combinedTemplateNode;
 		boolean errors;
-		public FragmentMergeResult(JsonNode combinedTemplateNode, boolean errors) {
+		FragmentMergeResult(JsonNode combinedTemplateNode, boolean errors) {
 			this.combinedTemplateNode = combinedTemplateNode;
 			this.errors = errors;
 		}

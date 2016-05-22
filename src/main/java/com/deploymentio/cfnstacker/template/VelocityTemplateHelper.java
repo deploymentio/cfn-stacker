@@ -1,9 +1,7 @@
 package com.deploymentio.cfnstacker.template;
 
 import java.io.StringWriter;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
@@ -56,6 +54,10 @@ public class VelocityTemplateHelper {
 				} else {
 					thisContext.put(entry.getKey(), mapper.treeToValue(value, VelocityObjectMap.class));
 				}
+			} else if (value.isBoolean()) {
+				thisContext.put(entry.getKey(), value.booleanValue());
+			} else if (value.isNumber()) {
+				thisContext.put(entry.getKey(), value.numberValue());
 			} else {
 				thisContext.put(entry.getKey(), value.textValue());
 			}

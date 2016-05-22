@@ -14,6 +14,8 @@ import org.junit.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.BooleanNode;
+import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 
@@ -60,6 +62,40 @@ public class VelocityTemplateHelperTest {
 	}
 
 	@Test
+	public void testCreateContextWithBooleanValue() throws Exception {
+		
+		HashMap<String, JsonNode> map = new HashMap<>();
+		map.put("key", BooleanNode.TRUE);
+		
+		VelocityContext context = helper.createContext(map, null);
+		assertTrue(context.get("key") instanceof Boolean);
+		assertTrue((Boolean)context.get("key"));
+	}
+	
+	@Test
+	public void testCreateContextWithNumberValue() throws Exception {
+		
+		HashMap<String, JsonNode> map = new HashMap<>();
+		map.put("key", new IntNode(314));
+		
+		VelocityContext context = helper.createContext(map, null);
+		assertTrue(context.get("key") instanceof Number);
+		assertEquals(314, ((Number)context.get("key")).intValue());
+	}
+	
+	@Test
+	public void testCreateContextWithTextValue() throws Exception {
+		
+		HashMap<String, JsonNode> map = new HashMap<>();
+		map.put("key", new TextNode("3.14"));
+		
+		VelocityContext context = helper.createContext(map, null);
+		assertTrue(context.get("key") instanceof String);
+		assertEquals("3.14", context.get("key"));
+	}
+
+	
+	@Test
 	public void testCreateContextWithListValue() throws Exception {
 		
 		HashMap<String, JsonNode> map = new HashMap<>();
@@ -90,10 +126,10 @@ public class VelocityTemplateHelperTest {
 	}
 
 	@Test
-	public void testCreateContextWithComplexValue() throws Exception {
+	public void testCreateContextWithComplexValues() throws Exception {
 		
 		ObjectNode node = new ObjectMapper().createObjectNode().put("k1", "1");
-		node.putArray("k2").add(1).add("2");
+		node.putArray("k2").add("1").add("2");
 		
 		HashMap<String, JsonNode> map = new HashMap<>();
 		map.put("key", node);
