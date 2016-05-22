@@ -39,7 +39,7 @@ public class OperationTracker {
 	public OperationTracker track(final CloudFormationClient client, final String stackName, final String stackId, final int checkIntervalSeconds) {
 		
 		if (stackNames.add(stackName)) {
-			logger.info("Tracking Stack: Name=" + stackName + " ID=" + stackId);
+			logger.debug("Tracking Stack: Name=" + stackName + " ID=" + stackId);
 			Future<String> future = executor.submit(new Callable<String>() {
 				@Override public String call() throws Exception {
 					// set the time to be a minute in the past - this is to account for any
@@ -65,8 +65,12 @@ public class OperationTracker {
 							// record the latest timestamp
 							if (evt.getTimestamp().after(startTime))
 								startTime = evt.getTimestamp() ;
-							
-							logger.info("Date=" + DateUtils.formatISO8601Date(evt.getTimestamp()) + " Stack=" + stackName + " Type=" + evt.getResourceType() + " ID=" + evt.getLogicalResourceId() + " Status=" + evt.getResourceStatus());
+					
+							if (logger.isDebugEnabled()) {
+								logger.info("EventDate=" + DateUtils.formatISO8601Date(evt.getTimestamp()) + " Stack=" + stackName + " Type=" + evt.getResourceType() + " ID=" + evt.getLogicalResourceId() + " Status=" + evt.getResourceStatus());
+							} else {
+								logger.info("Stack=" + stackName + " Type=" + evt.getResourceType() + " ID=" + evt.getLogicalResourceId() + " Status=" + evt.getResourceStatus());
+							}
 						}
 								
 						if (getOutLater) {
@@ -81,7 +85,7 @@ public class OperationTracker {
 			});
 			trackerRecords.put(stackId, new ProgressTrackerRecord(stackName, future));
 		} else {
-			logger.debug("Ignoring Stack: Name=" + stackName);
+			logger.trace("Ignoring Stack: Name=" + stackName);
 		}
 		
 		return this;
@@ -95,7 +99,7 @@ public class OperationTracker {
 		if (record != null) {
 			record.markEventsGenerated();
 		} else {
-			logger.warn("Events generated but tracking record not found: StackId=" + stackId);
+			logger.trace("Events generated but tracking record not found: StackId=" + stackId);
 		}
 	}
 	
@@ -110,7 +114,7 @@ public class OperationTracker {
 			for (String stackId : trackerRecords.keySet()) {
 				ProgressTrackerRecord trackerRecord = trackerRecords.get(stackId);
 				boolean done = trackerRecord.isDone(60000);
-				logger.debug("Tracker: Done=" + done + " Name=" + trackerRecord.getStackName() + " ID=" + stackId);
+				logger.trace("Done=" + done + " Name=" + trackerRecord.getStackName() + " ID=" + stackId);
 				allDone = allDone && done ;
 			}
 	

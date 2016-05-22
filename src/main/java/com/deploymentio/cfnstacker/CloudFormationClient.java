@@ -280,7 +280,7 @@ public class CloudFormationClient {
 		file.delete() ;
 
 		String url = "https://s3.amazonaws.com/" + config.getS3Bucket() + "/" + key ;
-		logger.info("Uploded CFN template to S3: Url=" + url) ;
+		logger.debug("Uploded CFN template to S3: Url=" + url) ;
 		return url ;
 	}
 	

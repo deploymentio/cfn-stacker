@@ -36,8 +36,11 @@ public class Stacker {
 	
 	public boolean run(StackerOptions options) throws Exception {
 
+		// fix the logging level first
+		new LogbackLevelChanger(options);
+		
 		// loading stack configuration
-		logger.info("Looking at configuration file: File=" + options.getConfigFile().getAbsolutePath());
+		logger.debug("Looking at configuration file: File=" + options.getConfigFile().getAbsolutePath());
 		StackConfigCreator configCreator = new JsonFileStackConfigCreator(options.getConfigFile());
 		StackConfig stackConfig = configCreator.getStackConfig();
 		
@@ -47,12 +50,12 @@ public class Stacker {
 		OperationTracker tracker = new OperationTracker();
 		
 		// see what state the stack is in
-		Stack stack = client.findStack(stackConfig.getName()) ;
-		Status status = Status.valueOf(stack);
+		final Stack stack = client.findStack(stackConfig.getName()) ;
+		final Status status = Status.valueOf(stack);
 
 		// perform the operation we want
 		Action action = options.getDesiredAction();
-		logger.info("About to take action: Action=" + action.name() + " Status=" + status.name());
+		logger.debug("About to take action: Action=" + action.name() + " Status=" + status.name());
 		if (action.isAllowed(status)) {
 			
 			switch(action) {
@@ -75,7 +78,7 @@ public class Stacker {
 					return new Operation(client, jsonNodeHelper, tracker) {
 						@Override protected String execute(String stackName, JsonNode templateBody, CloudFormationClient client) throws Exception {
 							client.deleteStack(stackName);
-							return null;
+							return stack.getStackId();
 						}
 					}.validateAndExecuteStack(stackConfig, "delete", false);
 					

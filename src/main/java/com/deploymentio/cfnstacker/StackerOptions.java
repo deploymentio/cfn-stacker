@@ -18,6 +18,9 @@ public class StackerOptions {
 
 	protected PrintWriter usageWriter = new PrintWriter(System.err); 
 
+	private boolean debugEnabled;
+	private boolean traceEnabled;
+	
 	private Action desiredAction;
 	private File configFile;
 	private List<String> errors = new ArrayList<>();
@@ -27,6 +30,8 @@ public class StackerOptions {
 		Options options = new Options();
 		options.addOption(Option.builder("c").desc("Stack configuration file").longOpt("config").hasArg().argName("file").type(File.class).required().build());
 		options.addOption(Option.builder("a").desc("Action to take").longOpt("action").hasArg().argName("name").required().build());
+		options.addOption(Option.builder("d").desc("Print debug messages").longOpt("debug").build());
+		options.addOption(Option.builder("t").desc("Print trace messages").longOpt("trace").build());
 		
 		String desiredActionValue = null;
 		
@@ -37,6 +42,8 @@ public class StackerOptions {
 		
 			desiredActionValue = commandLine.getOptionValue("action");
 			configFile = (File) commandLine.getParsedOptionValue("config");
+			debugEnabled = commandLine.hasOption("debug");
+			traceEnabled = commandLine.hasOption("trace");
 			
 		} catch (ParseException e) {
 			errors.add("Invalid or missing arguments, see usage message");
@@ -73,5 +80,13 @@ public class StackerOptions {
 	
 	public File getConfigFile() {
 		return configFile;
+	}
+	
+	public boolean isDebugEnabled() {
+		return debugEnabled;
+	}
+	
+	public boolean isTraceEnabled() {
+		return traceEnabled;
 	}
 }

@@ -34,6 +34,6 @@ public class JsonFormatter {
 		mapper.writeValue(writer, node);
 		
 		IOUtils.closeQuietly(writer) ;
-		logger.info("Wrote formatted JSON: File=" + file.getAbsolutePath());
+		logger.debug("Wrote formatted JSON: File=" + file.getAbsolutePath());
 	}
 }
