@@ -50,5 +50,5 @@ The two main things needed are the configuration file and the action to take. Th
 
 It is easier to explain the functionality by showing examples of what **cfn-stacker** can do:
 1. Example of a stack with simple parameters and single JSON fagment ... _[comming soon]_
-2. Example of a stack with more complex parameters and mulitple JSON fragments ... _[comming soon]_
-2. Example of a stack with multiple sub-stacks ... _[comming soon]_
+1. Example of a stack with more complex parameters and mulitple JSON fragments ... _[comming soon]_
+1. Example of a stack with multiple sub-stacks ... _[comming soon]_
