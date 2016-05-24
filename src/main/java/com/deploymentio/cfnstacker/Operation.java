@@ -49,41 +49,41 @@ public abstract class Operation {
 	 * fragment merges, for required template parameters, and then executes the
 	 * stack operation.
 	 * 
-	 * @param options the CLI and other options
+	 * @param config the CLI and other options
 	 * @param action description of the action we are performing
 	 * @return <code>true</code> if everything went well
 	 */
-	public boolean validateAndExecuteStack (StackConfig options, String action, boolean validateOnly) throws Exception {
+	public boolean validateAndExecuteStack(StackConfig config, String action, boolean validateOnly) throws Exception {
 		
 		JsonFormatter formatter = new JsonFormatter();
-		String stackName = options.getName() ;
-		JsonNode templateBody = null ;
-		boolean validated = false ;
+		String stackName = config.getName();
+		JsonNode templateBody = null;
+		boolean validated = false;
 		
 		try {
 			
 			if (!"create".equals(action)) {
 				// print the existing values
-				formatter.writeFormattedJSONString(client.getTemplateValue(stackName), new File(".template-existing.json")) ;
+				formatter.writeFormattedJSONString(client.getTemplateValue(stackName), new File(".template-existing.json"));
 				for (StackResource res: client.getStackResources(stackName)) {
 					String subStackName = res.getLogicalResourceId();
-					formatter.writeFormattedJSONString(client.getTemplateValue(res.getPhysicalResourceId()), new File(".template-existing-" + subStackName + ".json")) ;
+					formatter.writeFormattedJSONString(client.getTemplateValue(res.getPhysicalResourceId()), new File(".template-existing-" + subStackName + ".json"));
 				}
 			}
 			
 			// validate any sub-stacks
 			Map<String, String> subStackTemplateUrls = new HashMap<>();
 			boolean allSubStacksValid = true;
-			for(SubStackConfig subStackConfig: options.getSubStacks()) {
+			for(SubStackConfig subStackConfig: config.getSubStacks()) {
 				String subStackName = subStackConfig.getName();
 				JsonNode subStackBody = jsonNodeHelper.getSubStackMergedJson(subStackConfig);
-				String templateUrl = client.uploadCfnTemplateToS3(options.getName(), subStackName, subStackBody);
+				String templateUrl = client.uploadCfnTemplateToS3(config.getName(), subStackName, subStackBody);
 				if (client.validateSubStackTemplate(templateUrl)) {
-					logger.info("SubStack template with name '" + subStackName + "' is valid") ;
+					logger.info("SubStack template with name '" + subStackName + "' is valid");
 					subStackTemplateUrls.put(subStackName, templateUrl);
-					formatter.writeFormattedJSONString(subStackBody, new File(".template-new-" + subStackName + ".json")) ;
+					formatter.writeFormattedJSONString(subStackBody, new File(".template-new-" + subStackName + ".json"));
 				} else {
-					logger.error("SubStack template with name '" + subStackName + "' is NOT valid") ;
+					logger.error("SubStack template with name '" + subStackName + "' is NOT valid");
 					allSubStacksValid = false;
 					break;
 				}
@@ -96,32 +96,32 @@ public abstract class Operation {
 				validated = validateTemplateBody(templateBody);
 				
 				if (!validated) {
-					logger.error("Stack template with name '" + options.getName() + "' is NOT valid") ;
+					logger.error("Stack template with name '" + config.getName() + "' is NOT valid");
 				} else {
-					logger.info("Stack template with name '" + options.getName() + "' is valid") ;
+					logger.info("Stack template with name '" + config.getName() + "' is valid");
 				}
 			}
 			
 		} catch (Exception e) {
-			logger.error("Failure to validate stack template with name '" + stackName + "'", e) ;
+			logger.error("Failure to validate stack template with name '" + stackName + "'", e);
 		}
 		
 		if (validated && !validateOnly) {
 			
 			// execute the code
-			logger.info("Attempting to " + action + " stack with name '" + stackName + "'") ;
-			String stackId = execute(stackName, templateBody, client) ;
+			logger.info("Attempting to " + action + " stack with name '" + stackName + "'");
+			String stackId = execute(templateBody);
 
 			// track its progress
 			tracker.track(client, stackName, stackId, 30).waitUntilCompletion();
 			
 			if (!"delete".equals(action)) {
-                client.printStackOutputs(client.findStack(stackName)) ;
+                client.printStackOutputs(client.findStack(stackName));
             }
 		}
 
 		if(validated && validateOnly) {
-			formatter.writeFormattedJSONString(templateBody, new File(".template-new.json")) ;
+			formatter.writeFormattedJSONString(templateBody, new File(".template-new.json"));
 		}
 
 		return validated;
@@ -131,7 +131,7 @@ public abstract class Operation {
 		if (templateBody != null) {
 			return client.validateTemplate(templateBody);
 		}
-		return false ;
+		return false;
 	}
 	
 	/**
@@ -139,11 +139,9 @@ public abstract class Operation {
 	 * {@link Operation#validateAndExecuteStack(String)}
 	 * after the stack operation has been validated.
 	 * 
-	 * @param stackName stack name
 	 * @param templateBody the stack's JSON template
-	 * @param client the AWS CloudFormation client
 	 * @return the stack ID of the stack on which the operation was just
 	 *         executed
 	 */
-	protected abstract String execute(String stackName, JsonNode templateBody, CloudFormationClient client) throws Exception ;
+	protected abstract String execute(JsonNode templateBody) throws Exception;
 }
