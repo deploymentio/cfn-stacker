@@ -38,6 +38,7 @@ CFN Stacker is used to create/update/delete an AWS CloudFormation stack
 ```
 
 The two main things needed are the configuration file and the action to take. The actions are self-explanatory. The configuration file itself is a JSON document that describes the following about a stack:
+
 - Stack name
 - Any tags that can be assigned to the stack and all its resources
 - SNS topic that receives events as the stack is being created, updated, or deleted
@@ -49,6 +50,7 @@ The two main things needed are the configuration file and the action to take. Th
 ### Sample stack configurations/templates
 
 It is easier to explain the functionality by showing examples of what **cfn-stacker** can do:
+
 1. Example of a stack with simple parameters and single JSON fagment ... _[comming soon]_
 1. Example of a stack with more complex parameters and mulitple JSON fragments ... _[comming soon]_
 1. Example of a stack with multiple sub-stacks ... _[comming soon]_
