@@ -47,10 +47,73 @@ The two main things needed are the configuration file and the action to take. Th
 - List of template fragments and their own parameters. Each template fragment has access to all the stack parameters as well as its own parameters.
 - List of sub-stacks, their names, and a list of template fragments and parameters for each sub-stack.
 
+### Anatomy of a stack configuration
+
+```json
+{
+	"name": "stackname",
+	"s3Bucket": "my-s3-bucket",
+	"s3Prefix": "some-prefix/",
+	"snsTopic": "arn:aws:sns:us-east-1:1234567778901:cfn-events-topic",
+	"tags": {
+		"a-tag": "foo",
+		"b-tag": "bar"
+	},
+	"parameters": {
+		"environment": "test",
+		"officeIps": {
+			"office1": "10.0.1.0/24",
+			"office2": "10.0.2.0/24"
+		},
+		"stooges": [
+			"larry",
+			"moe",
+			"curly"
+		],
+		"aFlag": false
+	},
+	"fragments": [
+		{
+			"path": "security-groups.json"
+		},
+		{
+			"path": "web-server.json",
+			"parameters": {
+				"anotherFlag": true
+			}
+		}
+	],
+	"subStacks": [
+		{
+			"name": "lambda",
+			"fragments": [
+				{
+					"path": "lambda/roles.json",
+					"parameters": {
+						"anotherFlag": true
+					}
+				},
+				{
+					"path": "lambda/functions.json"
+				}
+			]
+		}
+	]
+}
+```
+
+- The `name` parameter determines the name of the stack, it is a required parameter.
+- The `s3Bucket` and `s3Prefix` parameters are also required. These parameters are used to upload the evaluated CFN templates before the CloudFormation api is invoked. The advantage of first uploading the template to S3 is that much larger templates are supported this way compared to sending in the template contents as part of the CloudFormation api calls.
+- The `tags` are an optional key/value pair map. The stack created will contain these tags. These tags are then propagated to all resources created within the stack through CloudFormation. This propagation of tags is a CloudFormation feature - nothing special that cfn-stacker is doing.
+- The `snsTopic` is an optional parameter which takes an ARN of an SNS topic. This topic will be sent events as stack resources are being created, updated, or deleted. Unless you want to take some automated action based on these events, there is no need to use this parameter.
+- The `parameters` attribute is a map of arbitrary key/values that will be used with your template fragments. It can be omitted if you don't have any such parameters - but I suspect, you won't be using cfn-stacker if you didn't need this feature. In addition to being available in your VTL expressions, these parameters will also provide values to any parameters defined in the `Parameters` section of your template. This only works for the top-level stack.
+- The `fragments` parameter is a required list of fragment objects where each fragment consists of a path to a template json file and optional parameters overrides for the template fragment. All the fragments are first evaluated using VTL rules and then merged into one big JSON template before CloudFormation api is used to create/update/delete the stack.
+- The `subStack` parameter is an optional list of sub-stack objects. Each sub-stack object has its own name and a list of `fragments` just like the top level stack does. For each sub-stack defined in this way, cfn-stacker will evaluate all fragments of the sub-stack, merge them into one JSON template, and upload them to S3. It is then your responsibility to refer to that template in your top-level stack using a resource with type of `AWS::CloudFormation::Stack`. For more details on using sub-stacks, see the sub-stack example below. 
+
 ### Sample stack configurations/templates
 
 It is easier to explain the functionality by showing examples of what **cfn-stacker** can do:
 
-1. Example of a stack with simple parameters and single JSON fagment ... _[comming soon]_
-1. Example of a stack with more complex parameters and mulitple JSON fragments ... _[comming soon]_
-1. Example of a stack with multiple sub-stacks ... _[comming soon]_
+1. Example of a [stack with simple parameters and single JSON fagment](example1/)
+1. Example of a stack with multiple JSON fragments ... _[comming soon]_
+1. Example of a stack with a sub-stack ... _[comming soon]_

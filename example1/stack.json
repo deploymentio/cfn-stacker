@@ -1,0 +1,21 @@
+{
+	"name": "example1",
+	"s3Bucket": "deploymentio-main",
+	"s3Prefix": "cfn-stacker-templates/",
+	"tags": {
+		"dio:domain": "deploymentio.com"
+	},
+	"parameters": {
+		"environment": "example1",
+		"officeIps": {
+			"office1": "38.38.38.0/25",
+			"office2": "54.54.54.0/25"
+		},
+		"openToPublic": false
+	},
+	"fragments": [
+		{
+			"path": "security-groups.json"
+		}
+	]
+}

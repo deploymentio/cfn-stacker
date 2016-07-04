@@ -1,0 +1,48 @@
+{
+	"Resources": {
+		"WebServerSecurityGroup":{
+			"Type": "AWS::EC2::SecurityGroup",
+			"Properties":{
+				"GroupDescription": "Allows access to web servers from offices#if(${openToPublic}) and public#end",
+				"Tags": [
+					{ "Key": "Name", "Value": "${environment}-web" }
+				],
+				"SecurityGroupIngress":[
+					#if (${openToPublic})
+						{
+							"CidrIp": "0.0.0.0/0",
+							"FromPort": "80",
+							"IpProtocol": "tcp",
+							"ToPort": "80"
+						},
+					#else
+						{
+							"CidrIp": "${officeIps.office1}",
+							"FromPort": "80",
+							"IpProtocol": "tcp",
+							"ToPort": "80"
+						},
+						{
+							"CidrIp": "${officeIps.office2}",
+							"FromPort": "80",
+							"IpProtocol": "tcp",
+							"ToPort": "80"
+						},
+					#end				
+					{
+						"CidrIp": "${officeIps.office1}",
+						"FromPort": "22",
+						"IpProtocol": "tcp",
+						"ToPort": "22"
+					},
+					{
+						"CidrIp": "${officeIps.office2}",
+						"FromPort": "22",
+						"IpProtocol": "tcp",
+						"ToPort": "22"
+					}
+				]
+			}
+		}
+	}
+}
