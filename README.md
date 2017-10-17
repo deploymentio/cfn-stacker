@@ -7,6 +7,8 @@ Major advantages of using **cfn-stacker** to maintain your stacks instead of usi
 - VTL can be used to script the generation of template fragments. This reduces verbosity and code duplication.
 - Templates are uploaded to S3 before CFN api is called. This means that the templates can be much larger.
 - The template, its parameters, and all the configuration about the CFN stack are contained in a configuration file. The means that the configuration itself can be maintained as code in version control. This also means, that one can re-use template fragments and run them with a slightly different configuration file to create a test and production stack, for example. 
+
+*Update*: CloudFormation has improved a lot and some of these capabilities might be not needed anymore ... thats how AWS rolls :-)
  
 ### Requirements
 - Active AWS account
@@ -117,3 +119,4 @@ It is easier to explain the functionality by showing examples of what **cfn-stac
 1. Example of a [stack with simple parameters and single JSON fagment](example1/)
 1. Example of a stack with multiple JSON fragments ... _[comming soon]_
 1. Example of a stack with a sub-stack ... _[comming soon]_
+
